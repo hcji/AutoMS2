@@ -1,0 +1,6 @@
+/.spyproject/
+*.mzML
+*.pyc
+*.npy
+*.npz
+*.ipynb_checkpoints/
