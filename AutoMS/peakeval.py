@@ -18,7 +18,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 def evaluate_peaks(peaks, pics, length=14, params=(8.5101, 1.6113, 0.1950), min_width = 6):
-    traces, snrs = [], []
+    traces = []
     exclude = []
 
     for i in tqdm(peaks.index):
@@ -39,7 +39,6 @@ def evaluate_peaks(peaks, pics, length=14, params=(8.5101, 1.6113, 0.1950), min_
         else:
             pass
             
-    snrs = np.array(snrs)
     traces = np.array(traces)
     exclude = np.array(exclude)
     
@@ -79,4 +78,4 @@ def evaluate_peaks(peaks, pics, length=14, params=(8.5101, 1.6113, 0.1950), min_
     plt.fill_between(np.arange(50), y1, color = 'lightblue')
     '''
     
-    return scores, snrs, X, X_rebuild, distance
+    return scores

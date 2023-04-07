@@ -25,14 +25,14 @@ SOFTWARE.
 
 """
 
-import time,os,shutil,time
+
 import numpy as np
 import hdbscan
 from sklearn.preprocessing import minmax_scale
 import pandas as pd
 from collections import deque
-from .mspd import peaks_detection 
-from .fileio import readms
+from AutoMS.mspd import peaks_detection 
+from AutoMS.fileio import readms
 
 
 def maxI(intensity):
@@ -127,10 +127,7 @@ def PIC(inputfile, min_intensity=200, mass_inv=1, rt_inv=15, mis_gap=3, max_item
                 choose_spec_2= choose_spec[np.argmax(choose_spec[:,2])].reshape(1,3)
             else:
                 choose_spec_2 = hdbscan_lc(choose_spec,choose_rt,h_intensity_rt,max_int_ms,rt_inv,mis_gap)
-                #np.savetxt('%s/%s_%s_%s_1.txt' % (file_t,max_int_ms,h_intensity_rt,max_intensity_intensity),choose_spec)
-            
-            # np.savetxt('%s/%s_%s_%s_%s_%s_%s.txt' % (file_t,max_int_ms,h_intensity_rt,max_intensity_intensity,choose_spec_2[0,0],choose_spec_2[-1,0],choose_spec_2.shape[0]), choose_spec_2)                            
-            pic_list['%s_%s_%s_%s_%s_%s' % (max_int_ms,h_intensity_rt,max_intensity_intensity,choose_spec_2[0,0],choose_spec_2[-1,0],choose_spec_2.shape[0])] = choose_spec_2
+                pic_list['%s_%s_%s_%s_%s_%s' % (max_int_ms,h_intensity_rt,max_intensity_intensity,choose_spec_2[0,0],choose_spec_2[-1,0],choose_spec_2.shape[0])] = choose_spec_2
             del_1_index = rt.index(choose_spec_2[0,0])
             del_2_index = rt.index(choose_spec_2[-1,0])+1
             del_not = np.setdiff1d(np.array(rt[del_1_index:del_2_index]),choose_spec_2[:,0])

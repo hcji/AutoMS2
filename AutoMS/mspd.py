@@ -133,7 +133,7 @@ def peaks_position(vec, ridges, cwt2d, wnd=2):
     for ridge in ridges:
         inds = np.where(cwt2d[ridge[0, :], ridge[1, :]] > 0)[0]
         if len(inds) > 0:
-            col = int(mode(ridge[1, inds])[0][0])
+            col = int(mode(ridge[1, inds], keepdims=True)[0][0])
             rows = ridge[0, :][(ridge[1, :] == col)]
             row = rows[0]
             cols_start = max(col - np.where(negs[row, 0:col][::-1])[0][0], 0)

@@ -24,6 +24,7 @@ class AutoMS:
         """
         self.data_path = data_path
         self.min_intensity = min_intensity
+        self.peaks = None
     
     
     def find_peaks(self, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000):
@@ -50,8 +51,25 @@ class AutoMS:
             output[f] = {'peaks': peaks, 'pics': pics}
         self.peaks = output
         return output
-        
     
+    
+    def evaluate_peaks(self):
+        if self.peaks is None:
+            raise ValueError('Please find peak first')
+        for f, vals in self.peaks.items():
+            peak = vals['peaks']
+            pic = vals['pics']
+            score = peakeval.evaluate_peaks(peak, pic)
+            self.peaks[f]['peaks']['score'] = score
+        return self.peaks
+    
+    
+    
+    
+    
+    
+    def save_project(self):
+        pass
     
 
 
@@ -62,8 +80,8 @@ class AutoMS:
 if __name__ == '__main__':
     
     data_path = "E:/Data/Chuanxiong"
-    automs = AutoMS(data_path, min_intensity = 1000000)
-    peaks = automs.find_peaks()
+    automs = AutoMS(data_path, min_intensity = 10000)
+    peaks = automs.find_peaks(max_items = 100000)
     
     
     
