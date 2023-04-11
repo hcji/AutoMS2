@@ -6,28 +6,28 @@ Created on Fri Jun 17 09:04:55 2022
 """
 
 import os
+import pickle
 import numpy as np
 from tqdm import tqdm
 
 from AutoMS import hpic
 from AutoMS import peakeval
+from AutoMS import matching
 
 
 class AutoMS:
-    def __init__(self, data_path, min_intensity):
+    def __init__(self, data_path, ):
         """
         Arguments:
             data_path: string
                 path to the dataset locally
-            min_intensity: string
-                minimum intensity of a peak.
         """
         self.data_path = data_path
-        self.min_intensity = min_intensity
         self.peaks = None
+        self.feature_table = None
     
     
-    def find_peaks(self, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000):
+    def find_peaks(self, min_intensity, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000):
         """
         Arguments:
             min_snr: float
@@ -36,14 +36,15 @@ class AutoMS:
                 minimum interval of the m/z values
             rt_inv: float
                 minimum interval of the retention time
+            min_intensity: string
+                minimum intensity of a peak.
         """
-        
         output = {}
         files = os.listdir(self.data_path)
         for i, f in enumerate(files):
             print('processing {}, {}/{} files, set maximum {} ion traces'.format(f, 1+i, len(files), max_items))
             peaks, pics = hpic.hpic(os.path.join(self.data_path, f), 
-                                    min_intensity = self.min_intensity, 
+                                    min_intensity = min_intensity, 
                                     min_snr = min_snr, 
                                     mass_inv = mass_inv, 
                                     rt_inv = rt_inv,
@@ -64,14 +65,25 @@ class AutoMS:
         return self.peaks
     
     
+    def match_peaks(self, method = 'simple', mz_tol = 0.01, rt_tol = 15, min_frac = 0.5):
+        linker = matching.FeatureMatching(self.peaks)
+        if method == 'simple':
+            linker.simple_matching(mz_tol = mz_tol, rt_tol = rt_tol)
+        else:
+            raise IOError('Invalid Method')
+        self.feature_table = linker.feature_filter(min_frac = min_frac)
+        return self.feature_table
     
     
+    def save_project(self, save_path):
+        with open(save_path, 'wb') as f:
+            pickle.dump(self.__dict__, f)
     
     
-    def save_project(self):
-        pass
-    
-
+    def load_project(self, save_path):
+        with open(save_path, 'rb') as f:
+            obj_dict = pickle.load(f)
+        self.__dict__.update(obj_dict)
 
 
 
@@ -80,8 +92,11 @@ class AutoMS:
 if __name__ == '__main__':
     
     data_path = "E:/Data/Chuanxiong"
-    automs = AutoMS(data_path, min_intensity = 10000)
-    peaks = automs.find_peaks(max_items = 100000)
+    automs = AutoMS(data_path)
+    automs.find_peaks(min_intensity = 20000, max_items = 100000)
+    automs.save_project('chuanxiong.project')
     
+    automs = AutoMS(data_path)
+    automs.load_project('chuanxiong.project')
     
     

@@ -65,28 +65,28 @@ class Imputer:
     
         
     def fill_with_low_value(self):
-        imputer = SimpleImputer(missing_values=np.nan, strategy="constant", fill_value=10**-6)
+        imputer = SimpleImputer(missing_values=np.nan, strategy="constant", fill_value=10**-6, keep_empty_features=True)
         x = imputer.fit_transform(self.x)
         y = self.y
         return x, y
     
     
     def fill_with_mean_value(self):
-        imputer = SimpleImputer(missing_values=np.nan, strategy="mean")
+        imputer = SimpleImputer(missing_values=np.nan, strategy="mean", keep_empty_features=True)
         x = imputer.fit_transform(self.x)
         y = self.y
         return x, y
     
     
     def fill_with_median_value(self):
-        imputer = SimpleImputer(missing_values=np.nan, strategy="median")
+        imputer = SimpleImputer(missing_values=np.nan, strategy="median", keep_empty_features=True)
         x = imputer.fit_transform(self.x)
         y = self.y
         return x, y        
     
     
     def fill_with_knn_imputer(self, n_neighbors = 3):
-        imputer = KNNImputer(missing_values=np.nan, n_neighbors = n_neighbors)
+        imputer = KNNImputer(missing_values=np.nan, n_neighbors = n_neighbors, keep_empty_features=True)
         x = imputer.fit_transform(self.x)
         y = self.y
         return x, y 
@@ -94,14 +94,14 @@ class Imputer:
 
     def fill_with_iterative_RF(self, n_estimators = 100, max_depth = 2, max_iter = 100):
         estimator = RandomForestRegressor(n_estimators=n_estimators, max_depth=max_depth)
-        imputer = IterativeImputer(estimator=estimator, missing_values=np.nan,max_iter=max_iter)
+        imputer = IterativeImputer(estimator=estimator, missing_values=np.nan,max_iter=max_iter, keep_empty_features=True)
         x = imputer.fit_transform(self.x)
         y = self.y
         return x, y     
     
     
     def fill_with_iterative_BR(self, max_iter = 100):
-        imputer = IterativeImputer(missing_values=np.nan, max_iter=max_iter)
+        imputer = IterativeImputer(missing_values=np.nan, max_iter=max_iter, keep_empty_features=True)
         x = imputer.fit_transform(self.x)
         y = self.y
         return x, y         
@@ -109,13 +109,8 @@ class Imputer:
     
     def fill_with_iterative_SVR(self, max_iter = 100):
         estimator = SVR()
-        imputer = IterativeImputer(estimator=estimator, missing_values=np.nan,max_iter=max_iter)
+        imputer = IterativeImputer(estimator=estimator, missing_values=np.nan,max_iter=max_iter, keep_empty_features=True)
         x = imputer.fit_transform(self.x)
         y = self.y
         return x, y        
-        
-        
-    
-        
-        
         

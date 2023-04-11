@@ -13,6 +13,7 @@ from tqdm import tqdm
 class FeatureMatching:
     def __init__(self, peaks):
         self.peaks = peaks
+        self.feature_table = None
         
     def simple_matching(self, mz_tol = 0.01, rt_tol = 15):
         peaks = self.peaks
@@ -56,20 +57,25 @@ class FeatureMatching:
                         scores[k][i] = peak['score'][j]
                 else:
                     pass
-            intensities = np.array(intensities)
-            scores = np.array(scores)
-            return intensities, scores
+        scores = np.nanmean(np.array(scores), axis = 1)
+        intensities = pd.DataFrame(np.array(intensities), columns=files)    
+        output = pd.DataFrame({'RT': rts, 'MZ': mzs, 'Score': scores})
+        output = pd.concat([output, intensities], axis = 1)
+        return output
         
         
-        def feature_filter(self, intensities, scores, min_frac = 0.5):
-            count_nan = np.sum(~np.isnan(intensities), axis = 1)
-            wh = np.where(count_nan / intensities.shape[1] >= min_frac)[0]
-            if len(wh) > 0:
-                intensities = intensities[wh,:]
-                scores = scores[wh,:]
-            else:
-                intensities = None
-                scores = None
-            return intensities, scores
+    def feature_filter(self, min_frac = 0.5):
+        if self.feature_table is None:
+            return None
+        files = list(self.peaks.keys())
+        intensities = self.feature_table[files]
+        count_nan = np.sum(~np.isnan(intensities), axis = 1)
+        wh = np.where(count_nan / intensities.shape[1] >= min_frac)[0]
+        if len(wh) > 0:
+            self.feature_table = self.feature_table.loc[wh,:]
+            self.feature_table = self.feature_table.reset_index(drop = True)
+        else:
+            self.feature_table = None
+        return self.feature_table
         
         
