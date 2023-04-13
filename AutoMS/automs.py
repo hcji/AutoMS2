@@ -101,12 +101,12 @@ class AutoMS:
         self.feature_table.loc[:,files] = x_imp[0]
     
     
-    def match_with_ms2(self):
+    def match_with_ms2(self, mz_tol = 0.01, rt_tol = 15):
         files = [os.path.join(self.data_path, f) for f in list(self.peaks.keys())]
-        print('Loading tandem ms from files... \n')
         spectrums = tandem.load_tandem_ms(files)
-        spectrums = tandem.consensus_spectrum(spectrums)
-        
+        spectrums = tandem.cluster_tandem_ms(spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
+        self.feature_table = tandem.feature_spectrum_matching(self.feature_table, spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
+
         
     def perform_deisotope(self):
         pass
