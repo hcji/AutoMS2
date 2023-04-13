@@ -6,52 +6,6 @@ Created on Wed Apr  5 09:23:35 2023
 """
 
 
-'''
-import numpy as np
-
-from sklearn.datasets import fetch_california_housing
-from sklearn.datasets import load_diabetes
-
-
-rng = np.random.RandomState(42)
-
-X_diabetes, y_diabetes = load_diabetes(return_X_y=True)
-X_diabetes = X_diabetes[:300]
-y_diabetes = y_diabetes[:300]
-
-
-def add_missing_values(X_full, y_full):
-    n_samples, n_features = X_full.shape
-
-    # Add missing values in 75% of the lines
-    missing_rate = 0.75
-    n_missing_samples = int(n_samples * missing_rate)
-
-    missing_samples = np.zeros(n_samples, dtype=bool)
-    missing_samples[:n_missing_samples] = True
-
-    rng.shuffle(missing_samples)
-    missing_features = rng.randint(0, n_features, n_missing_samples)
-    X_missing = X_full.copy()
-    X_missing[missing_samples, missing_features] = np.nan
-    y_missing = y_full.copy()
-
-    return X_missing, y_missing
-
-
-X_miss_diabetes, y_miss_diabetes = add_missing_values(X_diabetes, y_diabetes)
-
-imputer = Imputer(X_miss_diabetes, y_miss_diabetes)
-imputer.fill_with_low_value()
-imputer.fill_with_mean_value()
-imputer.fill_with_median_value()
-imputer.fill_with_knn_imputer()
-imputer.fill_with_iterative_RF()
-imputer.fill_with_iterative_BR()
-imputer.fill_with_iterative_SVR()
-'''
-
-
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
@@ -113,4 +67,49 @@ class Imputer:
         x = imputer.fit_transform(self.x)
         y = self.y
         return x, y        
-        
+
+
+'''
+import numpy as np
+
+from sklearn.datasets import fetch_california_housing
+from sklearn.datasets import load_diabetes
+
+
+rng = np.random.RandomState(42)
+
+X_diabetes, y_diabetes = load_diabetes(return_X_y=True)
+X_diabetes = X_diabetes[:300]
+y_diabetes = y_diabetes[:300]
+
+
+def add_missing_values(X_full, y_full):
+    n_samples, n_features = X_full.shape
+
+    # Add missing values in 75% of the lines
+    missing_rate = 0.75
+    n_missing_samples = int(n_samples * missing_rate)
+
+    missing_samples = np.zeros(n_samples, dtype=bool)
+    missing_samples[:n_missing_samples] = True
+
+    rng.shuffle(missing_samples)
+    missing_features = rng.randint(0, n_features, n_missing_samples)
+    X_missing = X_full.copy()
+    X_missing[missing_samples, missing_features] = np.nan
+    y_missing = y_full.copy()
+
+    return X_missing, y_missing
+
+
+X_miss_diabetes, y_miss_diabetes = add_missing_values(X_diabetes, y_diabetes)
+
+imputer = Imputer(X_miss_diabetes, y_miss_diabetes)
+imputer.fill_with_low_value()
+imputer.fill_with_mean_value()
+imputer.fill_with_median_value()
+imputer.fill_with_knn_imputer()
+imputer.fill_with_iterative_RF()
+imputer.fill_with_iterative_BR()
+imputer.fill_with_iterative_SVR()
+'''

@@ -13,10 +13,12 @@ from tqdm import tqdm
 from AutoMS import hpic
 from AutoMS import peakeval
 from AutoMS import matching
+from AutoMS import imputer
+from AutoMS import tandem
 
 
 class AutoMS:
-    def __init__(self, data_path, ):
+    def __init__(self, data_path):
         """
         Arguments:
             data_path: string
@@ -51,8 +53,7 @@ class AutoMS:
                                     max_items = max_items)
             output[f] = {'peaks': peaks, 'pics': pics}
         self.peaks = output
-        return output
-    
+        
     
     def evaluate_peaks(self):
         if self.peaks is None:
@@ -61,18 +62,90 @@ class AutoMS:
             peak = vals['peaks']
             pic = vals['pics']
             score = peakeval.evaluate_peaks(peak, pic)
-            self.peaks[f]['peaks']['score'] = score
-        return self.peaks
+            self.peaks[f]['peaks']['score'] = score 
     
     
     def match_peaks(self, method = 'simple', mz_tol = 0.01, rt_tol = 15, min_frac = 0.5):
+        if self.peaks is None:
+            raise ValueError('Please find peak first')
         linker = matching.FeatureMatching(self.peaks)
         if method == 'simple':
             linker.simple_matching(mz_tol = mz_tol, rt_tol = rt_tol)
         else:
             raise IOError('Invalid Method')
         self.feature_table = linker.feature_filter(min_frac = min_frac)
-        return self.feature_table
+    
+    
+    def impute_missing_value(self, method = 'KNN', **args):
+        if self.feature_table is None:
+            raise ValueError('Please match peak first')
+        files = list(self.peaks.keys())
+        x = self.feature_table.loc[:,files]
+        imp = imputer.Imputer(x, None)
+        if method == 'Low value':
+            x_imp = imp.fill_with_low_value()
+        elif method == 'Mean':
+            x_imp = imp.fill_with_mean_value()
+        elif method == 'Median':
+            x_imp = imp.fill_with_median_value()
+        elif method == 'KNN':
+            x_imp = imp.fill_with_knn_imputer(**args)
+        elif method == 'Iterative RF':
+            x_imp = imp.fill_with_iterative_RF(**args)
+        elif method == 'Iterative BR':
+            x_imp = imp.fill_with_iterative_BR(**args)
+        elif method == 'Iterative SVR':
+            x_imp = imp.fill_with_iterative_SVR(**args)
+        else:
+            raise ValueError(f"Invalid imputation method: {method}")
+        self.feature_table.loc[:,files] = x_imp[0]
+    
+    
+    def match_with_ms2(self):
+        files = [os.path.join(self.data_path, f) for f in list(self.peaks.keys())]
+        print('Loading tandem ms from files... \n')
+        spectrums = tandem.load_tandem_ms(files)
+        spectrums = tandem.consensus_spectrum(spectrums)
+        
+        
+    def perform_deisotope(self):
+        pass
+    
+    
+    def export_ms2_mgf(self):
+        pass
+    
+    
+    def load_deepmass(self):
+        pass
+    
+    
+    def perform_ms2_network(self):
+        pass
+    
+    
+    def perform_PCA(self):
+        pass
+    
+    
+    def perform_PLSDA(self):
+        pass
+    
+    
+    def perform_T_Test(self):
+        pass
+    
+    
+    def perform_heatmap(self):
+        pass
+    
+    
+    def perform_enrichment_analysis(self):
+        pass
+    
+    
+    def perform_biomarker_analysis(self):
+        pass
     
     
     def save_project(self, save_path):
@@ -94,7 +167,10 @@ if __name__ == '__main__':
     data_path = "E:/Data/Chuanxiong"
     automs = AutoMS(data_path)
     automs.find_peaks(min_intensity = 20000, max_items = 100000)
+    automs.match_peaks()
+    automs.impute_missing_value()
     automs.save_project('chuanxiong.project')
+    
     
     automs = AutoMS(data_path)
     automs.load_project('chuanxiong.project')

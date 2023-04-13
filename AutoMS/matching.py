@@ -44,14 +44,14 @@ class FeatureMatching:
                 
                 n = np.sum(~np.isnan(intensities[k]))
                 if np.isnan(intensities[k][i]):
-                    mzs[i] = (mzs[i] * n + peak['mz'][j]) / (n+1)
-                    rts[i] = (rts[i] * n + peak['rt'][j]) / (n+1)
+                    mzs[k] = (mzs[k] * n + peak['mz'][j]) / (n+1)
+                    rts[k] = (rts[k] * n + peak['rt'][j]) / (n+1)
                     intensities[k][i] = peak['intensity'][j]
                     if 'score' in peak.columns:
                         scores[k][i] = peak['score'][j]
                 elif intensities[k][i] < peak['intensity'][j]:
-                    mzs[i] = (mzs[i] * n + peak['mz'][j]) / (n+1)
-                    rts[i] = (rts[i] * n + peak['rt'][j]) / (n+1)
+                    mzs[k] = (mzs[k] * n + peak['mz'][j]) / (n+1)
+                    rts[k] = (rts[k] * n + peak['rt'][j]) / (n+1)
                     intensities[k][i] = peak['intensity'][j]
                     if 'score' in peak.columns:
                         scores[k][i] = peak['score'][j]
@@ -61,7 +61,7 @@ class FeatureMatching:
         intensities = pd.DataFrame(np.array(intensities), columns=files)    
         output = pd.DataFrame({'RT': rts, 'MZ': mzs, 'Score': scores})
         output = pd.concat([output, intensities], axis = 1)
-        return output
+        self.feature_table = output
         
         
     def feature_filter(self, min_frac = 0.5):
