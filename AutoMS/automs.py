@@ -15,6 +15,7 @@ from AutoMS import peakeval
 from AutoMS import matching
 from AutoMS import imputer
 from AutoMS import tandem
+from AutoMS import deepmass
 
 
 class AutoMS:
@@ -107,13 +108,9 @@ class AutoMS:
         spectrums = tandem.cluster_tandem_ms(spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
         self.feature_table = tandem.feature_spectrum_matching(self.feature_table, spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
 
-        
-    def perform_deisotope(self):
-        pass
     
-    
-    def export_ms2_mgf(self):
-        pass
+    def export_ms2_mgf(self, save_path):
+        deepmass.export_to_mgf(self.feature_table, save_path)
     
     
     def load_deepmass(self):
@@ -169,10 +166,11 @@ if __name__ == '__main__':
     automs.find_peaks(min_intensity = 20000, max_items = 100000)
     automs.match_peaks()
     automs.impute_missing_value()
+    automs.match_with_ms2()
+    automs.export_ms2_mgf('chuanxiong_tandem_ms.mgf')
     automs.save_project('chuanxiong.project')
     
     
     automs = AutoMS(data_path)
     automs.load_project('chuanxiong.project')
-    
     

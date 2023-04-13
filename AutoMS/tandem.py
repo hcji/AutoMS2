@@ -17,7 +17,7 @@ from matchms.importing import load_from_mzml
 
 
 def load_tandem_ms(files):
-    print('Loading tandem ms from files...\n')
+    print('Loading tandem ms from files...')
     all_spectrums = []
     for f in tqdm(files):
         all_spectrums += [s for s in load_from_mzml(f)]
@@ -51,7 +51,7 @@ def spectrum_to_vector(s, min_mz = 0, max_mz = 1000, scale = 0.1):
 
 def cluster_tandem_ms(all_spectrums, mz_tol = 0.01, rt_tol = 15):
     mzs, rts, spectrums = [], [], []
-    print('split spectrums based on rt and precursor mz...\n')
+    print('split spectrums based on rt and precursor mz...')
     for s in tqdm(all_spectrums):
         mz = s.get('precursor_mz')
         rt = s.get('scan_start_time')[0]
@@ -77,10 +77,10 @@ def cluster_tandem_ms(all_spectrums, mz_tol = 0.01, rt_tol = 15):
         rts[k] = (rts[k] * n + rt) / (n+1)
         spectrums[k] = spectrums[k] + [s]
     
-    print('cluster spectrums and generate consesus spectrum...\n')
+    print('cluster spectrums and generate consesus spectrum...')
     for i, spectrums_i in enumerate(tqdm(spectrums)):
         if len(spectrums_i) == 1:
-            spectrums[i] = spectrums_i
+            spectrums[i] = spectrums_i[0]
             continue
         spectrums_vectors = [spectrum_to_vector(s) for s in spectrums_i]
         cos_distance = 1 - cosine_similarity(spectrums_vectors)
@@ -92,7 +92,7 @@ def cluster_tandem_ms(all_spectrums, mz_tol = 0.01, rt_tol = 15):
         mz_list, intensity_list = consensus_spectrum(spectrums_select, mz_window = 0.1)        
         spectrum_consensus = Spectrum(mz=np.array(mz_list),
                                       intensities=np.array(intensity_list),
-                                      metadata={'id': 'spectrum_{}'.format(i),
+                                      metadata={'spectrum_id': 'spectrum_{}'.format(i),
                                                 "precursor_mz": mzs[i],
                                                 "retention_time": rts[i]})
         spectrums[i] = spectrum_consensus
@@ -126,7 +126,7 @@ def consensus_spectrum(spectrums, mz_window = 0.1):
 
 
 def feature_spectrum_matching(feature_table, spectrums, mz_tol = 0.01, rt_tol = 15):
-    print('matching consesus spectrums with features...\n')
+    print('matching consesus spectrums with features...')
     mzs = spectrums.loc[:,'mz'].values
     rts = spectrums.loc[:,'rt'].values
     tandem_ms = []
@@ -144,6 +144,6 @@ def feature_spectrum_matching(feature_table, spectrums, mz_tol = 0.01, rt_tol = 
         else:
             k = kk[0]        
         tandem_ms.append(spectrums.loc[k,'spectrum'])
-    feature_table['tandem_ms'] = tandem_ms
+    feature_table['Tandem_MS'] = tandem_ms
     return feature_table
         
