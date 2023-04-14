@@ -30,6 +30,7 @@ class AutoMS:
         self.ion_mode = ion_mode
         self.peaks = None
         self.feature_table = None
+        self.biomarker_list = []
     
     
     def find_features(self, min_intensity, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000):
@@ -150,11 +151,47 @@ class AutoMS:
         DRAnal.plot_2D(**args)
         
     
-    def perform_PLSDA(self):
-        pass
+    def perform_PLSDA(self, group_info = None, n_components=2, **args):
+        if self.feature_table is None:
+            raise ValueError('Please match peak first')
+        if group_info is not None:
+            files_keep = [value for key in group_info for value in group_info[key]]
+            x = self.feature_table.loc[:,files_keep].T
+            y = [key for key in group_info.keys() for f in files_keep if f in group_info[key]]
+        else:
+            raise ValueError('Please input group information')
+        
+        plsda = analysis.PLSDA(x, y, n_components=n_components)
+        plsda.scale_data(**args)
+        plsda.perform_PLSDA(**args)
+        plsda.plot_2D(**args)
+        plsda.leave_one_out_test(**args)
+        plsda.perform_permutation_test(**args)
+        self.feature_table['PLS_VIP'] = plsda.get_VIP()        
+    
+    
+    def perform_RandomForest(self, group_info = None, **args):
+        if self.feature_table is None:
+            raise ValueError('Please match peak first')
+        if group_info is not None:
+            files_keep = [value for key in group_info for value in group_info[key]]
+            x = self.feature_table.loc[:,files_keep].T
+            y = [key for key in group_info.keys() for f in files_keep if f in group_info[key]]
+        else:
+            raise ValueError('Please input group information')
+        
+        rf = analysis.RandomForest(x, y)
+        rf.scale_data(**args)
+        rf.perform_RF(**args)
+        rf.out_of_bag_score()
+        self.feature_table['RF_VIP'] = rf.get_VIP() 
     
     
     def perform_T_Test(self):
+        pass
+    
+    
+    def select_biomarker(self, criterion = {'T_Test': 0.05, 'PLS_VIP': 1.0}):
         pass
     
     
@@ -186,14 +223,14 @@ class AutoMS:
 
 if __name__ == '__main__':
     
-    data_path = "E:/Data/Chuanxiong"
+    data_path = "E:/Data/Guanghuoxiang/Convert_files_mzML/POS"
     automs = AutoMS(data_path)
     automs.find_features(min_intensity = 20000, max_items = 100000)
     automs.match_features()
     automs.impute_missing_features()
     automs.match_feature_with_ms2()
-    automs.export_ms2_mgf('chuanxiong_tandem_ms.mgf')
-    automs.save_project('chuanxiong.project')
+    automs.export_ms2_mgf('guanghuoxiang_tandem_ms.mgf')
+    automs.save_project('guanghuoxiang.project')
     
     data_path = "E:/Data/Chuanxiong"
     automs = AutoMS(data_path)
