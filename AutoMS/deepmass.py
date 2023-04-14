@@ -5,6 +5,8 @@ Created on Thu Apr 13 14:32:52 2023
 @author: DELL
 """
 
+import warnings
+warnings.filterwarnings("ignore")
 import matchms.filtering as msfilters
 from matchms.exporting import save_as_mgf
 from tqdm import tqdm
@@ -29,15 +31,15 @@ def export_to_mgf(feature_table, save_path):
         spectrum = feature_table.loc[i, 'Tandem_MS']
         if spectrum is None:
             continue
-        spectrum.metadata['compound_name'] = 'coumpound_{}'.format(i)
+        spectrum.set('compound_name', 'coumpound_{}'.format(i))
         if 'Adduct' not in feature_table.columns:
-            spectrum.metadata['adduct'] = '[M+H]+'
+            spectrum.set('adduct', '[M+H]+')
         else:
-            spectrum.metadata['adduct'] =  feature_table.loc[i, 'Adduct']
+            spectrum.set('adduct', feature_table.loc[i, 'Adduct'])
         if 'Ionmode' not in feature_table.columns:
-            spectrum.metadata['ionmode'] = 'Positive'
+            spectrum.set('ionmode', 'Positive')
         else:
-            spectrum.metadata['ionmode'] =  feature_table.loc[i, 'Ionmode']
+            spectrum.set('ionmode', feature_table.loc[i, 'Ionmode'])
         spectrum = spectrum_processing(spectrum)
         spectrums.append(spectrum)
     save_as_mgf(spectrums, save_path)
