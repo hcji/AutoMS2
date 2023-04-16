@@ -7,6 +7,7 @@ Created on Wed Apr  5 10:01:05 2023
 
 
 import numpy as np
+import pandas as pd
 import sklearn
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -23,6 +24,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
+from seaborn import heatmap
 from AutoMS.palette import PALETTES
 
 
@@ -287,6 +289,27 @@ class RandomForest:
     def get_VIP(self):
         vips = self.model.feature_importances_
         return vips
+
+
+class CorrMap:
+    def __init__(self, x):
+        self.x = x
+        self.x_scl = x
+        
+    
+    def scale_data(self, with_mean = True, with_std = True):
+        scl = StandardScaler(with_mean = with_mean, with_std = with_std)
+        self.x_scl = scl.fit_transform(self.x)
+    
+    
+    def calc_correlation(self):
+        x_scl = pd.DataFrame(self.x_scl).T
+        corr_mat = x_scl.corr()
+        plt.figure(dpi = 300)
+        heatmap(corr_mat, cmap="RdBu_r", annot=True)
+        return corr_mat
+
+
 
 
     
