@@ -51,6 +51,22 @@ def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
     return ellip
 
 
+class Preprocessing:
+    def __init__(self, x):
+        self.x = x
+        self.x_scl = x
+        
+    def scale_data(self, with_mean = True, with_std = True):
+        scl = StandardScaler(with_mean = with_mean, with_std = with_std)
+        self.x_scl = scl.fit_transform(self.x)
+    
+    def normalize(self, method = 'median'):
+        
+        
+        
+    
+
+
 class Dimensional_Reduction:
     def __init__(self, x, y):
         self.x = x
