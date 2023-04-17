@@ -35,16 +35,59 @@ from AutoMS.palette import PALETTES
 
 
 def plot_point_cov(points, nstd=2, ax=None, **kwargs):
+    """
+    Plot the covariance ellipse for a set of points.
+
+    Parameters:
+    -----------
+    points : array-like, shape (n,2)
+        The set of points to plot.
+    nstd : float, default 2
+        The number of standard deviations to use for the ellipse size.
+    ax : matplotlib.axes.Axes, default None
+        The axes on which to plot the ellipse.
+    **kwargs : optional keyword arguments
+        Additional arguments to pass to the plot_cov_ellipse function.
+
+    Returns:
+    --------
+    ellip : matplotlib.patches.Ellipse
+        The plotted ellipse object.
+    """
     pos = points.mean(axis=0)
     cov = np.cov(points, rowvar=False)
     return plot_cov_ellipse(cov, pos, nstd, ax, **kwargs)
 
 
 def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
+    """
+    Plot a covariance ellipse for a given covariance matrix and position.
+
+    Parameters:
+    -----------
+    cov : array-like, shape (2,2)
+        The covariance matrix.
+    pos : array-like, shape (2,)
+        The position of the ellipse center.
+    nstd : float, default 2
+        The number of standard deviations to use for the ellipse size.
+    ax : matplotlib.axes.Axes, default None
+        The axes on which to plot the ellipse.
+    **kwargs : optional keyword arguments
+        Additional arguments to pass to the Ellipse constructor.
+
+    Returns:
+    --------
+    ellip : matplotlib.patches.Ellipse
+        The plotted ellipse object.
+    """
+    
+    # Define a function to sort the eigenvalues and eigenvectors in descending order
     def eigsorted(cov):
         vals, vecs = np.linalg.eigh(cov)
         order = vals.argsort()[::-1]
         return vals[order], vecs[:,order]
+    
     if ax is None:
         ax = plt.gca()
     vals, vecs = eigsorted(cov)
@@ -57,11 +100,23 @@ def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
 
 class Preprocessing:
     def __init__(self, x):
+        """
+        Initialize the Preprocessing class with input data x.
+
+        Parameters:
+        x (pd.DataFrame): Input data to be preprocessed.
+        """
         self.x = x
         self.x_out = x
     
     
     def normalize(self, method = 'median'):
+        """
+        Normalize the data.
+
+        Parameters:
+        method (str): Normalization method to be used. Default is 'median'.
+        """
         sample_median = np.median(x, axis = 0)
         overall_median = np.median(sample_median)
         normalized_coeff = sample_median / overall_median
@@ -70,6 +125,16 @@ class Preprocessing:
     
     
     def calc_RSD(self, qc_samples = None):
+        """
+        Calculate the relative standard deviation (RSD) of the data.
+
+        Parameters:
+        qc_samples (list): List of columns containing quality control (QC) samples.
+                           If None, all columns will be used as QC samples.
+
+        Returns:
+        np.ndarray: RSD values for each row of the input data.
+        """
         if qc_samples is not None:
             x_qc = self.x.loc[:, qc_samples]
         else:
@@ -85,6 +150,13 @@ class Preprocessing:
     
     
     def impute_missing_features(self, impute_method = 'KNN', **args):
+        """
+        Impute missing values in the data.
+
+        Parameters:
+        impute_method (str): Imputation method to be used. Default is 'KNN'.
+        args: Additional arguments to be passed to the imputation function.
+        """
         imp = imputer.Imputer(self.x, None)
         if impute_method == 'Low value':
             x_imp = imp.fill_with_low_value()
@@ -106,6 +178,16 @@ class Preprocessing:
     
     
     def filter_outlier(self, group_info = None, outlier_threshold = 3):
+        """
+        Filters outliers in the input data.
+
+        Args:
+        - group_info (dict): a dictionary that specifies the columns to group by.
+        - outlier_threshold (float): the threshold value to identify outliers.
+
+        Returns:
+        - None (updates the self.x_out attribute)
+        """
         x = self.x
         if group_info is None:
             group_info = {'all': x.columns}
@@ -124,6 +206,16 @@ class Preprocessing:
     
     
     def filter_RSD(self, qc_samples = None, rsd_threshold = 0.3):
+        """
+        Filters invalid features based on the relative standard deviation (RSD) of the QC samples.
+
+        Args:
+        - qc_samples (list): a list of QC sample names to use for calculating the RSD.
+        - rsd_threshold (float): the threshold value to filter invalid features.
+
+        Returns:
+        - None (updates the self.x_out attribute)
+        """
         x = self.x
         x_rsd = self.calc_RSD(qc_samples = qc_samples)
         keep = np.where(x_rsd <= rsd_threshold)[0]
@@ -132,6 +224,15 @@ class Preprocessing:
 
 
     def plot_correlation(self, qc_samples = None):
+        """
+        Plots the correlation matrix of the input data.
+
+        Args:
+        - qc_samples (list): a list of QC sample names to use for calculating the correlation.
+
+        Returns:
+        - None (displays a heatmap)
+        """
         if qc_samples is not None:
             x_qc = self.x_out.loc[:, qc_samples]
         else:
@@ -144,6 +245,21 @@ class Preprocessing:
 
 
     def one_step(self, impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, qc_samples = None, group_info = None, **args):
+        """
+        Apply a series of preprocessing steps on the data.
+
+        Args:
+            impute_method (str): The method used to impute missing values. Default is 'KNN'.
+            outlier_threshold (int): The number of standard deviations from the median used to define outliers. Default is 3.
+            rsd_threshold (float): The relative standard deviation threshold used to filter invalid features with QC samples. Default is 0.3.
+            qc_samples (list): The names of the QC samples used to calculate the correlation matrix. Default is None, which will use all samples.
+            group_info (dict): A dictionary that maps group names to the corresponding column names in the data. Default is None, which will treat all columns as a single group.
+            **args: Other keyword arguments passed to the impute_missing_features() method.
+
+        Returns:
+            pd.DataFrame: The preprocessed data.
+
+        """
         print('impute missing values #1')
         self.impute_missing_features(impute_method = impute_method, **args)
         print('filter invalid features with RSDs (with QC samples)')
@@ -159,6 +275,11 @@ class Preprocessing:
 
 class T_Test:
     def __init__(self, x, y):
+        """
+        T_Test object initializer.
+        :param x: input array of shape (n_features, n_samples).
+        :param y: input array of shape (n_samples,) containing group labels.
+        """
         self.x = np.array(x)
         self.y = np.array(y)
         self.lbs = np.unique(y)
@@ -169,6 +290,9 @@ class T_Test:
         
         
     def perform_t_test(self):
+        """
+        Perform t-test between two groups.
+        """
         group1 = self.x[:, self.y == self.lbs[0]]
         group2 = self.x[:, self.y == self.lbs[1]]
         print('perform t test...')
@@ -178,10 +302,18 @@ class T_Test:
     
     
     def perform_multi_test_correlation(self, alpha=0.05, method='fdr_bh'):
+        """
+        Perform multiple testing correction using a given method.
+        :param alpha: significance level to apply.
+        :param method: multiple testing correction method to apply.
+        """
         reject, self.p_values, _, _ = multipletests(self.p_values, alpha=alpha, method=method)
         
         
     def calc_fold_change(self):
+        """
+        Calculate the fold change between two groups.
+        """
         group1 = self.x[:, self.y == self.lbs[0]]
         group2 = self.x[:, self.y == self.lbs[1]]
         print('calculate fold change...')
@@ -192,6 +324,13 @@ class T_Test:
     
     
     def plot_volcano(self, feature_name = None, fc_threshold = 2.0, pval_threshold = 0.05, topN = 20):
+        """
+        Plot a volcano plot of the t-test results.
+        :param feature_name: input array of shape (n_features,) containing feature names.
+        :param fc_threshold: fold change threshold to highlight significant features.
+        :param pval_threshold: p-value threshold to highlight significant features.
+        :param topN: number of top significant features to label.
+        """
         up_regulated = (self.log2FC > fc_threshold) & (self.p_values < pval_threshold)
         down_regulated = (self.log2FC < -fc_threshold) & (self.p_values < pval_threshold)
         not_significant = (self.p_values >= pval_threshold)
@@ -224,11 +363,15 @@ class T_Test:
                     arrowprops=dict(arrowstyle="-", color='black', lw=0.5))
         
             
-        
-
-
 class Dimensional_Reduction:
     def __init__(self, x, y):
+        """
+        Initialize the Dimensional_Reduction object with input data X and labels y.
+
+        Args:
+            x (np.ndarray): Input data with shape (n_samples, n_features).
+            y (np.ndarray): Labels with shape (n_samples, ).
+        """
         self.x = x
         self.y = y
         self.x_scl = x
@@ -236,26 +379,58 @@ class Dimensional_Reduction:
         
         
     def scale_data(self, with_mean = True, with_std = True):
+        """
+        Scale the input data using StandardScaler.
+
+        Args:
+            with_mean (bool, optional): Whether or not to center the data. Defaults to True.
+            with_std (bool, optional): Whether or not to scale the data to unit variance. Defaults to True.
+        """
         scl = StandardScaler(with_mean = with_mean, with_std = with_std)
         self.x_scl = scl.fit_transform(self.x)
         
         
     def perform_PCA(self, n_components = 2):
+        """
+        Perform PCA on the scaled data.
+
+        Args:
+            n_components (int, optional): Number of principal components to keep. Defaults to 2.
+        """
         pca = PCA(n_components = n_components).fit(self.x_scl)
         self.model = pca
 
     
     def perform_tSNE(self, n_components = 2):
+        """
+        Perform t-SNE on the scaled data.
+
+        Args:
+            n_components (int, optional): Number of dimensions to reduce to. Defaults to 2.
+        """
         tsne = TSNE(n_components=n_components).fit(self.x_scl)
         self.model = tsne
         
     
     def perform_uMAP(self, n_neighbors=5, min_dist=0.3):
+        """
+        Perform UMAP on the scaled data.
+
+        Args:
+            n_neighbors (int, optional): Number of neighbors used for constructing the initial graph. Defaults to 5.
+            min_dist (float, optional): Minimum distance between embedded points. Defaults to 0.3.
+        """
         umap = UMAP(n_neighbors=n_neighbors, min_dist=min_dist).fit(self.x_scl)
         self.model = umap
     
     
     def plot_2D(self, palette = 'lancet_lanonc'):
+        """
+        Plot the reduced data in two dimensions.
+
+        Args:
+            palette (str, optional): Name of the color palette to use for plotting. Defaults to 'lancet_lanonc'.
+        """
         y = np.array(self.y)
         x_map = self.model.fit_transform(self.x_scl)
         colors = list(PALETTES[palette].values())
@@ -282,6 +457,14 @@ class Dimensional_Reduction:
 
 class PLSDA:
     def __init__(self, x, y, n_components=2):
+        """
+        Constructor for the PLSDA class.
+
+        Args:
+        x (np.ndarray): The input data, which is a 2D numpy array where each row is an observation and each column is a feature.
+        y (np.ndarray): The target labels, which is a 1D numpy array.
+        n_components (int): The number of PLS components to compute.
+        """
         self.x = x
         self.y = y
         self.n_components = n_components
@@ -293,11 +476,21 @@ class PLSDA:
         
     
     def scale_data(self, with_mean = True, with_std = True):
+        """
+        Scales the data using the standard scaler.
+
+        Args:
+        with_mean (bool): If True, centers the data to have a mean of zero.
+        with_std (bool): If True, scales the data to have a unit variance.
+        """
         scl = StandardScaler(with_mean = with_mean, with_std = with_std)
         self.x_scl = scl.fit_transform(self.x)    
         
 
     def perform_PLSDA(self):
+        """
+        Performs the PLS-DA analysis.
+        """
         self.pls = PLSRegression(n_components=self.n_components)
         x_pls = self.pls.fit_transform(self.x, self.y_label)[0]
         self.lda = LinearDiscriminantAnalysis()
@@ -305,6 +498,12 @@ class PLSDA:
         
     
     def get_VIP(self):
+        """
+        Computes the VIP (Variable Importance in Projection) scores.
+
+        Returns:
+        np.ndarray: A 1D numpy array containing the VIP scores for each feature.
+        """
         t = self.pls.x_scores_
         w = self.pls.x_weights_
         q = self.pls.y_loadings_
@@ -320,6 +519,12 @@ class PLSDA:
 
 
     def plot_2D(self, palette = 'lancet_lanonc'):
+        """
+        Plots the 2D scores plot for PLS-DA.
+
+        Args:
+        palette (str): The name of the color palette to use. Default is 'lancet_lanonc'.
+        """
         y = np.array(self.y)
         x_map = self.pls.transform(self.x_scl)
         colors = list(PALETTES[palette].values())
@@ -337,6 +542,17 @@ class PLSDA:
         
         
     def leave_one_out_test(self, y_new = None, plot = True):
+        """
+        Performs leave-one-out test using PLS regression and LDA for classification and returns the accuracy.
+        
+        Args:
+            y_new (np.ndarray): New label values to be used for classification instead of the default ones. 
+                (only used for permutation_test). Default is None, in which case the original labels are used.
+            plot (bool): Whether or not to plot the confusion matrix. Default is True.
+        
+        Returns:
+            float: Accuracy of the leave-one-out test.
+        """
         X = np.array(self.x)
         if y_new is None:
             y = self.y_label
@@ -394,6 +610,19 @@ class PLSDA:
 
 
     def perform_permutation_test(self, n_permutations = 1000):
+        """
+        Performs a permutation test to determine whether the true accuracy is significant.
+
+        Parameters:
+        -----------
+        n_permutations: int, optional
+            The number of permutations to perform. Default is 1000.
+
+        Returns:
+        --------
+        float
+            The p-value of the permutation test.
+        """
         accuracies = []
         true_accuracy = self.leave_one_out_test(plot = False)
         print("Perform permutation test")

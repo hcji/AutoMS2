@@ -189,7 +189,7 @@ class AutoMS:
         self.feature_table['T_Test_P_{}'.format('_'.join(group_info.keys()))] = t_test.p_values
     
     
-    def select_biomarker(self, criterion = {'T_Test': 0.05, 'PLS_VIP': 1.0}):
+    def select_biomarker(self, criterion = {'PLS_VIP': 1.0}):
         pass
     
     
