@@ -9,4 +9,6 @@ seaborn==0.11.2
 tensorflow==2.9.1
 matchms==0.18.0
 umap-learn==0.5.3
+statsmodels == 0.13.5
+adjustText == 0.8
 tqdm

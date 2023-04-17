@@ -15,6 +15,8 @@ from sklearn.manifold import TSNE
 from umap import UMAP
 
 from tqdm import tqdm
+from scipy.stats import ttest_ind
+from statsmodels.stats.multitest import multipletests
 from sklearn.preprocessing import LabelEncoder
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -25,6 +27,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from seaborn import heatmap
+from adjustText import adjust_text
 
 from AutoMS import imputer
 from AutoMS.palette import PALETTES
@@ -152,6 +155,76 @@ class Preprocessing:
         print('calculate correlation (of QC samples)')
         self.plot_correlation(qc_samples = qc_samples)
         return self.x_out
+
+
+class T_Test:
+    def __init__(self, x, y):
+        self.x = np.array(x)
+        self.y = np.array(y)
+        self.lbs = np.unique(y)
+        self.p_values = np.repeat(np.nan, len(x))
+        self.log2FC = np.repeat(np.nan, len(x))
+        if len(self.lbs) != 2:
+            raise IOError('Invalid input of y')
+        
+        
+    def perform_t_test(self):
+        group1 = self.x[:, self.y == self.lbs[0]]
+        group2 = self.x[:, self.y == self.lbs[1]]
+        print('perform t test...')
+        for i in tqdm(range(group1.shape[0])):
+            _, p = ttest_ind(group1[i], group2[i])
+            self.p_values[i] = p
+    
+    
+    def perform_multi_test_correlation(self, alpha=0.05, method='fdr_bh'):
+        reject, self.p_values, _, _ = multipletests(self.p_values, alpha=alpha, method=method)
+        
+        
+    def calc_fold_change(self):
+        group1 = self.x[:, self.y == self.lbs[0]]
+        group2 = self.x[:, self.y == self.lbs[1]]
+        print('calculate fold change...')
+        for i in tqdm(range(group1.shape[0])):
+            m1 = np.mean(group1[i])
+            m2 = np.mean(group2[i])
+            self.log2FC[i] = np.log2(m1 / m2)
+    
+    
+    def plot_volcano(self, feature_name = None, fc_threshold = 2.0, pval_threshold = 0.05, topN = 20):
+        up_regulated = (self.log2FC > fc_threshold) & (self.p_values < pval_threshold)
+        down_regulated = (self.log2FC < -fc_threshold) & (self.p_values < pval_threshold)
+        not_significant = (self.p_values >= pval_threshold)
+        mixed = ~(up_regulated | down_regulated | not_significant)
+        colors = {'Up': '#E64B35', 'Down': '#4DBBD5', 'NS': 'grey', 'Mixed': '#00A087'}
+        labels = {'Up': 'Up-regulated', 'Down': 'Down-regulated', 'NS': 'Not significant', 'Mixed': 'No diff'}
+        
+        plt.figure(dpi = 300)
+        plt.scatter(self.log2FC[up_regulated], -np.log10(self.p_values[up_regulated]), color=colors['Up'], label=labels['Up'])
+        plt.scatter(self.log2FC[down_regulated], -np.log10(self.p_values[down_regulated]), color=colors['Down'], label=labels['Down'])
+        plt.scatter(self.log2FC[not_significant], -np.log10(self.p_values[not_significant]), color=colors['NS'], label=labels['NS'])
+        plt.scatter(self.log2FC[mixed], -np.log10(self.p_values[mixed]), color=colors['Mixed'], label=labels['Mixed'])
+        plt.axhline(y = -np.log10(pval_threshold), color='black', linestyle='--')
+        plt.axvline(x = fc_threshold, color='black', linestyle='--')
+        plt.axvline(x = -fc_threshold, color='black', linestyle='--')
+        plt.xlabel('log2(Fold change)')
+        plt.ylabel('-log10(p value)')
+        plt.legend()
+        
+        if feature_name is None:
+            return
+        texts = []
+        topN_threshold = np.sort(self.p_values)[min(topN, len(self.p_values))]
+        for i in range(len(mixed)):
+            if (up_regulated[i] or down_regulated[i]) and self.p_values[i] <= topN_threshold:
+                x, y, s = self.log2FC[i], -np.log10(self.p_values[i]), feature_name[i]
+                texts.append(plt.text(x, y, s, fontsize = 8))
+        adjust_text(texts, force_points=0.2, force_text=0.2,
+                    expand_points=(1, 1), expand_text=(1, 1),
+                    arrowprops=dict(arrowstyle="-", color='black', lw=0.5))
+        
+            
+        
 
 
 class Dimensional_Reduction:

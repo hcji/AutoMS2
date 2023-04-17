@@ -5,6 +5,7 @@ Created on Thu Apr 13 14:32:52 2023
 @author: DELL
 """
 
+import os
 import warnings
 warnings.filterwarnings("ignore")
 import matchms.filtering as msfilters
@@ -42,6 +43,8 @@ def export_to_mgf(feature_table, save_path):
             spectrum.set('ionmode', feature_table.loc[i, 'Ionmode'])
         spectrum = spectrum_processing(spectrum)
         spectrums.append(spectrum)
+    if os.path.exists(save_path):
+        os.remove(save_path)     
     save_as_mgf(spectrums, save_path)
     print('Finished')
     

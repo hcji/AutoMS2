@@ -171,8 +171,22 @@ class AutoMS:
         self.feature_table['RF_VIP'] = rf.get_VIP() 
     
     
-    def perform_T_Test(self):
-        pass
+    def perform_T_Test(self, group_info = None, **args):
+        if self.feature_table is None:
+            raise ValueError('Please match peak first')
+        if group_info is not None:
+            files_keep = [value for key in group_info for value in group_info[key]]
+            x = self.feature_table.loc[:,files_keep]
+            y = [key for key in group_info.keys() for f in files_keep if f in group_info[key]]
+        else:
+            raise ValueError('Please input group information')
+        
+        t_test = analysis.T_Test(x, y)
+        t_test.perform_t_test()
+        t_test.calc_fold_change()
+        t_test.perform_multi_test_correlation(**args)
+        t_test.plot_volcano()
+        self.feature_table['T_Test_P_{}'.format('_'.join(group_info.keys()))] = t_test.p_values
     
     
     def select_biomarker(self, criterion = {'T_Test': 0.05, 'PLS_VIP': 1.0}):
@@ -236,6 +250,7 @@ if __name__ == '__main__':
     automs.match_feature_with_ms2()
     automs.export_ms2_mgf('guanghuoxiang_tandem_ms.mgf')
     automs.save_project('guanghuoxiang.project')
+    
     automs.perform_dimensional_reduction(group_info = group_info, method = 'tSNE')
     automs.perform_PLSDA(group_info = {'PX_L': ['HF1_CP1_FZTM230002472-1A.mzML','HF1_CP1_FZTM230002473-1A.mzML','HF1_CP1_FZTM230002474-1A.mzML',
                                                 'HF1_CP1_FZTM230002475-1A.mzML', 'HF1_CP1_FZTM230002476-1A.mzML', 'HF1_CP1_FZTM230002477-1A.mzML'],
