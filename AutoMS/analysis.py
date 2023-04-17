@@ -48,8 +48,6 @@ def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
     theta = np.degrees(np.arctan2(*vecs[:,0][::-1]))
     width, height = 2 * nstd * np.sqrt(vals)
     ellip = Ellipse(xy=pos, width=width, height=height, angle=theta, **kwargs)
-    
-    
     ax.add_artist(ellip)
     return ellip
 
@@ -237,7 +235,7 @@ class PLSDA:
         t = self.pls.x_scores_
         w = self.pls.x_weights_
         q = self.pls.y_loadings_
-        m, p = self.pls.x.shape
+        m, p = self.x_scl.shape
         _, h = t.shape
         vips = np.zeros((p,))
         s = np.diag(t.T @ t @ q.T @ q).reshape(h, -1)
@@ -294,6 +292,7 @@ class PLSDA:
         if not plot:
             return accuracy_score(y, y_preds)
         
+        print('Classification matrics of leave-one-out test')
         print(classification_report(y, y_preds, target_names=class_labels))
         
         confusion = confusion_matrix(y, y_preds)
@@ -334,7 +333,7 @@ class PLSDA:
         print("p-value:", p_value)
         
         plt.figure(dpi = 300)
-        plt.hist(accuracies, bins = int(n_permutations / 25), color = '#4DBBD5')
+        plt.hist(accuracies, bins = min(int(n_permutations / 25), self.x.shape[0]), color = '#4DBBD5')
         plt.axvline(true_accuracy, color = '#E64B35', linestyle='--')
         plt.xlabel('Accuracy of LOO', fontsize = 12)
         plt.ylabel('Frequency', fontsize = 12)
@@ -364,7 +363,8 @@ class RandomForest:
         class_labels = self.model.classes_
         oob_decision = self.model.oob_decision_function_
         y_preds = self.model.classes_[np.argmax(oob_decision, axis = 1)]
-    
+        
+        print('Classification matrics of out-of-bag')
         print(classification_report(y, y_preds, target_names=class_labels))
         
         confusion = confusion_matrix(y, y_preds)
