@@ -25,7 +25,10 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from seaborn import heatmap
+
+from AutoMS import imputer
 from AutoMS.palette import PALETTES
+
 
 
 def plot_point_cov(points, nstd=2, ax=None, **kwargs):
@@ -54,17 +57,103 @@ def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
 class Preprocessing:
     def __init__(self, x):
         self.x = x
-        self.x_scl = x
-        
-    def scale_data(self, with_mean = True, with_std = True):
-        scl = StandardScaler(with_mean = with_mean, with_std = with_std)
-        self.x_scl = scl.fit_transform(self.x)
+        self.x_out = x
+    
     
     def normalize(self, method = 'median'):
-        
-        
-        
+        sample_median = np.median(x, axis = 0)
+        overall_median = np.median(sample_median)
+        normalized_coeff = sample_median / overall_median
+        x_norm = x / normalized_coeff
+        self.x_out = x_norm
     
+    
+    def calc_RSD(self, qc_samples = None):
+        if qc_samples is not None:
+            x_qc = self.x.loc[:, qc_samples]
+        else:
+            x_qc = self.x
+        x_rsd = np.nanstd(x_qc, axis = 1) / np.nanmean(x_qc, axis = 1)
+        
+        plt.figure(dpi = 300)
+        plt.hist(x_rsd * 100, bins = int(len(x_rsd) / 200), color = '#4DBBD5')
+        plt.axvline(30, color = '#E64B35', linestyle='--')
+        plt.xlabel('Relative Standard Deviation (%)', fontsize = 12)
+        plt.ylabel('Frequency', fontsize = 12)
+        return x_rsd
+    
+    
+    def impute_missing_features(self, impute_method = 'KNN', **args):
+        imp = imputer.Imputer(self.x, None)
+        if impute_method == 'Low value':
+            x_imp = imp.fill_with_low_value()
+        elif impute_method == 'Mean':
+            x_imp = imp.fill_with_mean_value()
+        elif impute_method == 'Median':
+            x_imp = imp.fill_with_median_value()
+        elif impute_method == 'KNN':
+            x_imp = imp.fill_with_knn_imputer(**args)
+        elif impute_method == 'Iterative RF':
+            x_imp = imp.fill_with_iterative_RF(**args)
+        elif impute_method == 'Iterative BR':
+            x_imp = imp.fill_with_iterative_BR(**args)
+        elif impute_method == 'Iterative SVR':
+            x_imp = imp.fill_with_iterative_SVR(**args)
+        else:
+            raise ValueError(f"Invalid imputation method: {impute_method}")
+        self.x_out = pd.DataFrame(x_imp[0], columns = self.x.columns)
+    
+    
+    def filter_outlier(self, group_info = None, outlier_threshold = 3):
+        x = self.x
+        if group_info is None:
+            group_info = {'all': x.columns}
+        for key, cols in group_info.items():
+            x_sub = x.loc[:,cols]
+            x_medians = np.median(x_sub, axis = 1)
+            x_stds = np.std(x_sub, axis = 1)
+            x_outlier_indices = np.abs(x_sub - x_medians[:, np.newaxis]) > outlier_threshold * x_stds[:, np.newaxis]
+            for col in x_sub:
+                sample = x_sub[col]
+                outliers = x_outlier_indices[col]
+                sample[outliers] = np.nan
+                x_sub[col] = sample
+            x.loc[:,cols] = x_sub
+        self.x_out = x
+    
+    
+    def filter_RSD(self, qc_samples = None, rsd_threshold = 0.3):
+        x = self.x
+        x_rsd = self.calc_RSD(qc_samples = qc_samples)
+        keep = np.where(x_rsd <= rsd_threshold)[0]
+        x = x.loc[keep,:]
+        self.x_out = x.reset_index(drop = True)
+
+
+    def plot_correlation(self, qc_samples = None):
+        if qc_samples is not None:
+            x_qc = self.x_out.loc[:, qc_samples]
+        else:
+            x_qc = self.x_out
+        scl = StandardScaler()
+        x_scl = pd.DataFrame(scl.fit_transform(x_qc), columns = x_qc.columns)
+        corr_mat = x_scl.corr()
+        plt.figure(dpi = 300)
+        heatmap(corr_mat, cmap="RdBu_r", annot=True, vmin=0.5, vmax=1)
+
+
+    def one_step(self, impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, qc_samples = None, group_info = None, **args):
+        print('impute missing values #1')
+        self.impute_missing_features(impute_method = impute_method, **args)
+        print('filter invalid features with RSDs (with QC samples)')
+        self.filter_RSD(qc_samples = qc_samples, rsd_threshold = 0.3)
+        print('filter outliers')
+        self.filter_outlier(group_info = group_info, outlier_threshold = 3)
+        print('impute missing values #2')
+        self.impute_missing_features(impute_method = impute_method, **args)
+        print('calculate correlation (of QC samples)')
+        self.plot_correlation(qc_samples = qc_samples)
+        return self.x_out
 
 
 class Dimensional_Reduction:
@@ -148,7 +237,7 @@ class PLSDA:
         t = self.pls.x_scores_
         w = self.pls.x_weights_
         q = self.pls.y_loadings_
-        m, p = x.shape
+        m, p = self.pls.x.shape
         _, h = t.shape
         vips = np.zeros((p,))
         s = np.diag(t.T @ t @ q.T @ q).reshape(h, -1)
@@ -171,12 +260,13 @@ class PLSDA:
             x1, x2 = pts.T
             plt.plot(x1, x2, '.', color=colors[i], label = l)
             plot_point_cov(pts, nstd=3, alpha=0.2, color=colors[i])
+        plt.legend()
         plt.xlabel('PC 1')
         plt.ylabel('PC 2')
         
         
     def leave_one_out_test(self, y_new = None, plot = True):
-        X = self.x
+        X = np.array(self.x)
         if y_new is None:
             y = self.y_label
         else:
@@ -185,7 +275,7 @@ class PLSDA:
         
         pls = PLSRegression(n_components = self.n_components)
         lda = LinearDiscriminantAnalysis()
-        n_samples = self.x.shape[0]
+        n_samples = X.shape[0]
         y_preds = []
         for i in range(n_samples):
             test_indices = [i]
@@ -245,7 +335,7 @@ class PLSDA:
         
         plt.figure(dpi = 300)
         plt.hist(accuracies, bins = int(n_permutations / 25), color = '#4DBBD5')
-        plt.vlines(true_accuracy, 0, 20, color = '#E64B35', linestyles='dashed')
+        plt.axvline(true_accuracy, color = '#E64B35', linestyle='--')
         plt.xlabel('Accuracy of LOO', fontsize = 12)
         plt.ylabel('Frequency', fontsize = 12)
 
@@ -305,27 +395,6 @@ class RandomForest:
     def get_VIP(self):
         vips = self.model.feature_importances_
         return vips
-
-
-class CorrMap:
-    def __init__(self, x):
-        self.x = x
-        self.x_scl = x
-        
-    
-    def scale_data(self, with_mean = True, with_std = True):
-        scl = StandardScaler(with_mean = with_mean, with_std = with_std)
-        self.x_scl = scl.fit_transform(self.x)
-    
-    
-    def calc_correlation(self):
-        x_scl = pd.DataFrame(self.x_scl).T
-        corr_mat = x_scl.corr()
-        plt.figure(dpi = 300)
-        heatmap(corr_mat, cmap="RdBu_r", annot=True)
-        return corr_mat
-
-
 
 
     

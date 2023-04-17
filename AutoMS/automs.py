@@ -13,7 +13,6 @@ from tqdm import tqdm
 from AutoMS import hpic
 from AutoMS import peakeval
 from AutoMS import matching
-from AutoMS import imputer
 from AutoMS import tandem
 from AutoMS import deepmass
 from AutoMS import analysis
@@ -80,30 +79,15 @@ class AutoMS:
         self.feature_table = linker.feature_filter(min_frac = min_frac)
         self.feature_table['Ionmode'] = self.ion_mode
     
-    
-    def impute_missing_features(self, method = 'KNN', **args):
+        
+    def preprocessing(self, impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, qc_samples = None, group_info = None, **args):
         if self.feature_table is None:
             raise ValueError('Please match peak first')
         files = list(self.peaks.keys())
         x = self.feature_table.loc[:,files]
-        imp = imputer.Imputer(x, None)
-        if method == 'Low value':
-            x_imp = imp.fill_with_low_value()
-        elif method == 'Mean':
-            x_imp = imp.fill_with_mean_value()
-        elif method == 'Median':
-            x_imp = imp.fill_with_median_value()
-        elif method == 'KNN':
-            x_imp = imp.fill_with_knn_imputer(**args)
-        elif method == 'Iterative RF':
-            x_imp = imp.fill_with_iterative_RF(**args)
-        elif method == 'Iterative BR':
-            x_imp = imp.fill_with_iterative_BR(**args)
-        elif method == 'Iterative SVR':
-            x_imp = imp.fill_with_iterative_SVR(**args)
-        else:
-            raise ValueError(f"Invalid imputation method: {method}")
-        self.feature_table.loc[:,files] = x_imp[0]
+        preprocessor = analysis.Preprocessing(x)
+        x_prep = preprocessor.one_step(impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, qc_samples = qc_samples, group_info = group_info, **args)
+        self.feature_table.loc[:,files] = x_prep
     
     
     def match_feature_with_ms2(self, mz_tol = 0.01, rt_tol = 15):
@@ -151,7 +135,7 @@ class AutoMS:
         DRAnal.plot_2D(**args)
         
     
-    def perform_PLSDA(self, group_info = None, n_components=2, **args):
+    def perform_PLSDA(self, group_info = None, n_components=2, n_permutations = 1000):
         if self.feature_table is None:
             raise ValueError('Please match peak first')
         if group_info is not None:
@@ -161,12 +145,12 @@ class AutoMS:
         else:
             raise ValueError('Please input group information')
         
-        plsda = analysis.PLSDA(x, y, n_components=n_components)
-        plsda.scale_data(**args)
-        plsda.perform_PLSDA(**args)
-        plsda.plot_2D(**args)
-        plsda.leave_one_out_test(**args)
-        plsda.perform_permutation_test(**args)
+        plsda = analysis.PLSDA(x, y, n_components = n_components)
+        plsda.scale_data()
+        plsda.perform_PLSDA()
+        plsda.plot_2D()
+        plsda.leave_one_out_test()
+        plsda.perform_permutation_test(n_permutations = n_permutations)
         self.feature_table['PLS_VIP'] = plsda.get_VIP()        
     
     
@@ -227,17 +211,34 @@ if __name__ == '__main__':
     automs = AutoMS(data_path)
     automs.find_features(min_intensity = 20000, max_items = 100000)
     automs.match_features()
-    automs.impute_missing_features()
+    
+    data_path = "E:/Data/Guanghuoxiang/Convert_files_mzML/POS"
+    automs = AutoMS(data_path)
+    automs.load_project('guanghuoxiang.project')
+    qc_samples = ['HF1_1578259_CP_QC1.mzML', 'HF1_1578259_CP_QC2.mzML', 'HF1_1578259_CP_QC3.mzML', 'HF1_1578259_CP_QC4.mzML', 'HF1_1578259_CP_QC5.mzML']
+    group_info = {'QC': ['HF1_1578259_CP_QC1.mzML', 'HF1_1578259_CP_QC2.mzML', 'HF1_1578259_CP_QC3.mzML', 'HF1_1578259_CP_QC4.mzML', 'HF1_1578259_CP_QC5.mzML'],
+                  'PX_L': ['HF1_CP1_FZTM230002472-1A.mzML','HF1_CP1_FZTM230002473-1A.mzML','HF1_CP1_FZTM230002474-1A.mzML',
+                           'HF1_CP1_FZTM230002475-1A.mzML', 'HF1_CP1_FZTM230002476-1A.mzML', 'HF1_CP1_FZTM230002477-1A.mzML'],
+                  'PX_S': ['HF1_CP2_FZTM230002478-1A.mzML', 'HF1_CP2_FZTM230002479-1A.mzML', 'HF1_CP2_FZTM230002480-1A.mzML',
+                          'HF1_CP2_FZTM230002481-1A.mzML','HF1_CP2_FZTM230002482-1A.mzML','HF1_CP2_FZTM230002483-1A.mzML'],
+                  'ZX_L': ['HF1_CP3_FZTM230002484-1A.mzML', 'HF1_CP3_FZTM230002485-1A.mzML', 'HF1_CP3_FZTM230002486-1A.mzML',
+                          'HF1_CP3_FZTM230002487-1A.mzML', 'HF1_CP3_FZTM230002488-1A.mzML', 'HF1_CP3_FZTM230002489-1A.mzML'],
+                  'ZX_S': ['HF1_CP4_FZTM230002490-1A.mzML', 'HF1_CP4_FZTM230002491-1A.mzML', 'HF1_CP4_FZTM230002492-1A.mzML',
+                          'HF1_CP4_FZTM230002493-1A.mzML', 'HF1_CP4_FZTM230002494-1A.mzML', 'HF1_CP4_FZTM230002495-1A.mzML'],
+                  'NX_L': ['HF1_CP5_FZTM230002496-1A.mzML', 'HF1_CP5_FZTM230002497-1A.mzML', 'HF1_CP5_FZTM230002498-1A.mzML',
+                           'HF1_CP5_FZTM230002499-1A.mzML', 'HF1_CP5_FZTM230002500-1A.mzML', 'HF1_CP5_FZTM230002501-1A.mzML'],
+                  'NX_S': ['HF1_CP6_FZTM230002502-1A.mzML', 'HF1_CP6_FZTM230002503-1A.mzML', 'HF1_CP6_FZTM230002504-1A.mzML',
+                           'HF1_CP6_FZTM230002505-1A.mzML', 'HF1_CP6_FZTM230002506-1A.mzML', 'HF1_CP6_FZTM230002507-1A.mzML']
+                  }
+    
+    automs.preprocessing(impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, 
+                         qc_samples = qc_samples, group_info = group_info)
     automs.match_feature_with_ms2()
     automs.export_ms2_mgf('guanghuoxiang_tandem_ms.mgf')
     automs.save_project('guanghuoxiang.project')
-    
-    data_path = "E:/Data/Chuanxiong"
-    automs = AutoMS(data_path)
-    automs.load_project('chuanxiong.project')
-    group_info = {'G': ['G1.mzML', 'G2.mzML', 'G3.mzML', 'G4.mzML', 'G5.mzML', 'G6.mzML', 'G7.mzML', 'G8.mzML'],
-                  'X': ['X1.mzML', 'X2.mzML', 'X3.mzML', 'X4.mzML', 'X5.mzML', 'X6.mzML', 'X7.mzML', 'X8.mzML'],
-                  'Y': ['Y1.mzML', 'Y2.mzML', 'Y3.mzML', 'Y4.mzML', 'Y5.mzML', 'Y6.mzML', 'Y7.mzML']}
-    automs.perform_dimensional_reduction(group_info = group_info, method = 'PCA')
-    
+    automs.perform_dimensional_reduction(group_info = group_info, method = 'tSNE')
+    automs.perform_PLSDA(group_info = {'PX_L': ['HF1_CP1_FZTM230002472-1A.mzML','HF1_CP1_FZTM230002473-1A.mzML','HF1_CP1_FZTM230002474-1A.mzML',
+                                                'HF1_CP1_FZTM230002475-1A.mzML', 'HF1_CP1_FZTM230002476-1A.mzML', 'HF1_CP1_FZTM230002477-1A.mzML'],
+                                       'PX_S': ['HF1_CP2_FZTM230002478-1A.mzML', 'HF1_CP2_FZTM230002479-1A.mzML', 'HF1_CP2_FZTM230002480-1A.mzML',
+                                                'HF1_CP2_FZTM230002481-1A.mzML','HF1_CP2_FZTM230002482-1A.mzML','HF1_CP2_FZTM230002483-1A.mzML']})
     
