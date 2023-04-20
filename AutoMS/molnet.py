@@ -5,18 +5,20 @@ Created on Tue Apr 18 10:02:43 2023
 @author: DELL
 """
 
-
+import io
 import numpy as np
 import pandas as pd
 import networkx as nx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 from tqdm import tqdm
 from rdkit import Chem
 from rdkit import rdBase
 from rdkit.Chem import Draw, AllChem
 from rdkit.Chem.Draw import rdMolDraw2D
+from PIL import Image
 
 from bokeh.io import show
 from bokeh.models import Plot, Range1d, MultiLine, Circle, HoverTool, TapTool, BoxSelectTool, ResetTool
@@ -31,6 +33,8 @@ class MolNet:
     def __init__(self, feature_table_annotated, group_info):
         self.smiles = feature_table_annotated['CanonicalSMILES'].values
         self.names = feature_table_annotated['Annotated Name'].values
+        self.group_info = group_info
+        self.feature_table_annotated = feature_table_annotated
         self.matrix = None
         self.G1 = None
         self.G2 = None
@@ -107,4 +111,47 @@ class MolNet:
         
     def plot_selected_subgraph(self):
         G2 = self.G2
+        group_info = self.group_info
+        feature_table_annotated = self.feature_table_annotated
+        feature_table_annotated = feature_table_annotated.reset_index(drop = True)
+        
+        thick = [(u, v) for (u, v, d) in G2.edges(data=True) if d["weight"] >= 0.8]
+        medium = [(u, v) for (u, v, d) in G2.edges(data=True) if 0.6 < d["weight"] < 0.8]
+        thin = [(u, v) for (u, v, d) in G2.edges(data=True) if d["weight"] <= 0.6]
+
+        pos = nx.circular_layout(G2)
+        pos = nx.spring_layout(G2, pos=pos)
+        fig, ax = plt.subplots(figsize=(15, 12), dpi = 300)
+        nx.draw_networkx_edges(G2, pos=pos, ax=ax, edgelist=thick, width=3, alpha=0.7, edge_color="black")
+        nx.draw_networkx_edges(G2, pos=pos, ax=ax, edgelist=medium, width=2, alpha=0.7, edge_color="black")
+        nx.draw_networkx_edges(G2, pos=pos, ax=ax, edgelist=thin, width=1, alpha=0.7, edge_color="black")
+        ax.axis('off')
+        
+        tr_figure = ax.transData.transform
+        tr_axes = fig.transFigure.inverted().transform
+
+        struct_size = (ax.get_xlim()[1] - ax.get_xlim()[0]) * 0.045 # adjust this value to change size of structure drawings
+        struct_center = struct_size / 2.0
+
+        for i, node in enumerate(G2.nodes(data = True)):
+            rdimg = Draw.MolToImage(Chem.MolFromSmiles(node[1]['smiles']))
+            pilimg = Image.frombytes('RGB', rdimg.size, rdimg.tobytes())
+            xf, yf = tr_figure(pos[node[0]])
+            xa, ya = tr_axes((xf, yf))
+            # get overlapped axes and plot structure
+            a = plt.axes([xa - struct_center, ya - struct_center, struct_size, struct_size])
+            a.imshow(pilimg)
+            a.axis("off")
+
+            if group_info is not None:
+                group_values = np.array([feature_table_annotated.loc[node[0], group_info[k]] for k in group_info.keys()])
+                group_values = np.median(group_values, axis = 1)
+                group_values = list(group_values / np.mean(group_values))
+                b = plt.axes([xa - struct_center + 0.02, ya - struct_center - 0.02, struct_size / 2.5, struct_size / 2.5])
+                b.imshow([group_values], cmap='bwr')
+                border = Rectangle((-0.5, -0.5), len(group_values), 1, fill=False, edgecolor='black', linewidth=1.5)
+                border.set_clip_on(False)
+                b.add_patch(border)
+                b.axis("off")
+        plt.show()
         

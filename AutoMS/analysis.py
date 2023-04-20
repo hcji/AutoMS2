@@ -702,6 +702,7 @@ class RandomForest:
     
 if __name__ == '__main__':
     
+    """
     from sklearn import datasets
     
     # example data
@@ -726,6 +727,6 @@ if __name__ == '__main__':
     plsda.plot_2D()
     plsda.leave_one_out_test()
     plsda.perform_permutation_test()
-    
+    """
     
     
