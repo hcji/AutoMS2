@@ -8,6 +8,8 @@ Created on Fri Jun 17 09:04:55 2022
 import os
 import pickle
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 from tqdm import tqdm
 
 from AutoMS import hpic
@@ -247,10 +249,31 @@ class AutoMS:
         self.biomarker_table = feature_table.loc[selected, :]
         
     
-    def perform_heatmap(self):
-        pass
-
-
+    def perform_heatmap(self, biomarker_only = True, group_info = None, hide_ytick = True):
+        if biomarker_only:
+            biomarker_table = self.biomarker_table
+        else:
+            biomarker_table = self.feature_table_annotated
+        if len(biomarker_table) >= 200:
+            raise IOError('Too many features selected')
+        files = list(self.peaks.keys())
+        if group_info is not None:
+            files_keep = [value for key in group_info for value in group_info[key]]
+            x = biomarker_table.loc[:,files_keep]
+        else:
+            x = biomarker_table.loc[:,files]
+        x_mean = np.mean(x, axis = 1)
+        x_ = x.div(x_mean, axis=0)
+        plt.figure(dpi = 300)
+        if 'Annotated Name' in list(biomarker_table.columns):
+            yticklabels = list(biomarker_table['Annotated Name'])
+        else:
+            yticklabels = True
+        if hide_ytick:
+            yticklabels = False
+        sns.clustermap(x_, cmap="RdBu", figsize = (8, len(x_) / 5), yticklabels = yticklabels)
+        
+        
     def perform_molecular_network(self, target_compound = None):
         pass
     
