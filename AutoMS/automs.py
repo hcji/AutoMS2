@@ -219,15 +219,43 @@ class AutoMS:
             self.feature_table['T_Test_P_{}'.format('_'.join(group_info.keys()))] = t_test.p_values
     
     
-    def select_biomarker(self, criterion = {'PLS_VIP': 1.0}, annotated_only = True):
-        pass
-    
+    def select_biomarker(self, criterion = {'PLS_VIP': ['>', 1.5]}, annotated_only = True):
+        if annotated_only:
+            feature_table = self.feature_table_annotated
+        else:
+            feature_table = self.feature_table
+        if feature_table is None:
+            raise ValueError('Please match peak or load deepmass result, first')
+        
+        selected = np.repeat(True, len(feature_table))
+        for i, cir in criterion.items():
+            if i not in feature_table.columns:
+                raise ValueError('{} not in columns of feature table, please check if {} is calculated'.format(i,i))
+            vals = feature_table.loc[:, i].values
+            thres = cir[1]
+            if cir[0] == '>':
+                res_i = vals > thres
+            elif cir[0] == '>=':
+                res_i = vals >= thres
+            elif cir[0] == '<=':
+                res_i = vals <= thres
+            elif cir[0] == '<':
+                res_i = vals < thres
+            else:
+                raise ValueError('{} is not a compare function'.format(cir[0]))
+            selected = np.logical_and(selected, res_i)
+        self.biomarker_table = feature_table.loc[selected, :]
+        
     
     def perform_heatmap(self):
         pass
 
 
-    def perform_ms2_network(self):
+    def perform_molecular_network(self, target_compound = None):
+        pass
+    
+    
+    def perform_spectral_network(self, target_compound = None):
         pass
     
     

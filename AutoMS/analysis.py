@@ -117,6 +117,7 @@ class Preprocessing:
         Parameters:
         method (str): Normalization method to be used. Default is 'median'.
         """
+        x = self.x
         sample_median = np.median(x, axis = 0)
         overall_median = np.median(sample_median)
         normalized_coeff = sample_median / overall_median
