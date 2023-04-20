@@ -29,7 +29,8 @@ class AutoMS:
         self.ion_mode = ion_mode
         self.peaks = None
         self.feature_table = None
-        self.biomarker_list = []
+        self.feature_table_annotated = None
+        self.biomarker_table = None
     
     
     def find_features(self, min_intensity, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000):
@@ -79,7 +80,7 @@ class AutoMS:
         self.feature_table = linker.feature_filter(min_frac = min_frac)
         self.feature_table['Ionmode'] = self.ion_mode
     
-        
+    
     def preprocessing(self, impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, qc_samples = None, group_info = None, **args):
         if self.feature_table is None:
             raise ValueError('Please match peak first')
@@ -101,29 +102,31 @@ class AutoMS:
         deepmass.export_to_mgf(self.feature_table, save_path)
     
     
-    def load_deepmass(self):
-        pass
+    def load_deepmass(self, deepmass_dir):
+        value_columns = list(self.peaks.keys())
+        self.feature_table = deepmass.link_to_deepmass(self.feature_table, deepmass_dir)
+        self.feature_table_annotated = deepmass.refine_annotated_table(self.feature_table, value_columns)
     
     
-    def perform_ms2_network(self):
-        pass
-    
-    
-    def perform_dimensional_reduction(self, group_info = None, method = 'PCA', **args):
-        if self.feature_table is None:
-            raise ValueError('Please match peak first')
+    def perform_dimensional_reduction(self, group_info = None, method = 'PCA', annotated_only = True, **args):
+        if annotated_only:
+            feature_table = self.feature_table_annotated
+        else:
+            feature_table = self.feature_table
+        if feature_table is None:
+            raise ValueError('Please match peak or load deepmass result, first')
+            
         files = list(self.peaks.keys())
-
         if group_info is not None:
             files_keep = [value for key in group_info for value in group_info[key]]
-            x = self.feature_table.loc[:,files_keep].T
+            x = feature_table.loc[:,files_keep].T
             y = [key for key in group_info.keys() for f in files_keep if f in group_info[key]]
         else:
-            x = self.feature_table.loc[:,files].T
+            x = feature_table.loc[:,files].T
             y = np.repeat('Samples', len(files))
             
         DRAnal = analysis.Dimensional_Reduction(x, y)
-        DRAnal.scale_data(**args)
+        DRAnal.scale_data()
         if method == 'PCA':
             DRAnal.perform_PCA(**args)
         elif method == 'tSNE':
@@ -132,15 +135,20 @@ class AutoMS:
             DRAnal.perform_uMAP(**args)
         else:
             raise IOError('Invalid Method')
-        DRAnal.plot_2D(**args)
+        DRAnal.plot_2D()
         
     
-    def perform_PLSDA(self, group_info = None, n_components=2, n_permutations = 1000):
-        if self.feature_table is None:
-            raise ValueError('Please match peak first')
+    def perform_PLSDA(self, group_info = None, n_components=2, n_permutations = 1000, annotated_only = True):
+        if annotated_only:
+            feature_table = self.feature_table_annotated
+        else:
+            feature_table = self.feature_table
+        if feature_table is None:
+            raise ValueError('Please match peak or load deepmass result, first')
+            
         if group_info is not None:
             files_keep = [value for key in group_info for value in group_info[key]]
-            x = self.feature_table.loc[:,files_keep].T
+            x = feature_table.loc[:,files_keep].T
             y = [key for key in group_info.keys() for f in files_keep if f in group_info[key]]
         else:
             raise ValueError('Please input group information')
@@ -151,15 +159,24 @@ class AutoMS:
         plsda.plot_2D()
         plsda.leave_one_out_test()
         plsda.perform_permutation_test(n_permutations = n_permutations)
-        self.feature_table['PLS_VIP'] = plsda.get_VIP()        
+        
+        if annotated_only:
+            self.feature_table_annotated['PLS_VIP'] = plsda.get_VIP()   
+        else:
+            self.feature_table['PLS_VIP'] = plsda.get_VIP()   
     
     
-    def perform_RandomForest(self, group_info = None, **args):
-        if self.feature_table is None:
-            raise ValueError('Please match peak first')
+    def perform_RandomForest(self, group_info = None, annotated_only = True, **args):
+        if annotated_only:
+            feature_table = self.feature_table_annotated
+        else:
+            feature_table = self.feature_table
+        if feature_table is None:
+            raise ValueError('Please match peak or load deepmass result, first')
+            
         if group_info is not None:
             files_keep = [value for key in group_info for value in group_info[key]]
-            x = self.feature_table.loc[:,files_keep].T
+            x = feature_table.loc[:,files_keep].T
             y = [key for key in group_info.keys() for f in files_keep if f in group_info[key]]
         else:
             raise ValueError('Please input group information')
@@ -168,15 +185,24 @@ class AutoMS:
         rf.scale_data(**args)
         rf.perform_RF(**args)
         rf.out_of_bag_score()
-        self.feature_table['RF_VIP'] = rf.get_VIP() 
+        
+        if annotated_only:
+            self.feature_table_annotated['RF_VIP'] = rf.get_VIP() 
+        else:
+            self.feature_table['RF_VIP'] = rf.get_VIP() 
     
     
-    def perform_T_Test(self, group_info = None, **args):
-        if self.feature_table is None:
-            raise ValueError('Please match peak first')
+    def perform_T_Test(self, group_info = None, annotated_only = True, **args):
+        if annotated_only:
+            feature_table = self.feature_table_annotated
+        else:
+            feature_table = self.feature_table
+        if feature_table is None:
+            raise ValueError('Please match peak or load deepmass result, first')
+            
         if group_info is not None:
             files_keep = [value for key in group_info for value in group_info[key]]
-            x = self.feature_table.loc[:,files_keep]
+            x = feature_table.loc[:,files_keep]
             y = [key for key in group_info.keys() for f in files_keep if f in group_info[key]]
         else:
             raise ValueError('Please input group information')
@@ -186,14 +212,22 @@ class AutoMS:
         t_test.calc_fold_change()
         t_test.perform_multi_test_correlation(**args)
         t_test.plot_volcano()
-        self.feature_table['T_Test_P_{}'.format('_'.join(group_info.keys()))] = t_test.p_values
+        
+        if annotated_only:
+            self.feature_table_annotated['T_Test_P_{}'.format('_'.join(group_info.keys()))] = t_test.p_values
+        else:
+            self.feature_table['T_Test_P_{}'.format('_'.join(group_info.keys()))] = t_test.p_values
     
     
-    def select_biomarker(self, criterion = {'PLS_VIP': 1.0}):
+    def select_biomarker(self, criterion = {'PLS_VIP': 1.0}, annotated_only = True):
         pass
     
     
     def perform_heatmap(self):
+        pass
+
+
+    def perform_ms2_network(self):
         pass
     
     
@@ -225,10 +259,12 @@ if __name__ == '__main__':
     automs = AutoMS(data_path)
     automs.find_features(min_intensity = 20000, max_items = 100000)
     automs.match_features()
+    automs.save_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
     
     data_path = "E:/Data/Guanghuoxiang/Convert_files_mzML/POS"
     automs = AutoMS(data_path)
-    automs.load_project('guanghuoxiang.project')
+    automs.load_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
+    
     qc_samples = ['HF1_1578259_CP_QC1.mzML', 'HF1_1578259_CP_QC2.mzML', 'HF1_1578259_CP_QC3.mzML', 'HF1_1578259_CP_QC4.mzML', 'HF1_1578259_CP_QC5.mzML']
     group_info = {'QC': ['HF1_1578259_CP_QC1.mzML', 'HF1_1578259_CP_QC2.mzML', 'HF1_1578259_CP_QC3.mzML', 'HF1_1578259_CP_QC4.mzML', 'HF1_1578259_CP_QC5.mzML'],
                   'PX_L': ['HF1_CP1_FZTM230002472-1A.mzML','HF1_CP1_FZTM230002473-1A.mzML','HF1_CP1_FZTM230002474-1A.mzML',
@@ -248,12 +284,16 @@ if __name__ == '__main__':
     automs.preprocessing(impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, 
                          qc_samples = qc_samples, group_info = group_info)
     automs.match_feature_with_ms2()
-    automs.export_ms2_mgf('guanghuoxiang_tandem_ms.mgf')
-    automs.save_project('guanghuoxiang.project')
+    automs.export_ms2_mgf("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang_tandem_ms.mgf")
+    automs.load_deepmass("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang_annotation")
+    automs.save_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
     
     automs.perform_dimensional_reduction(group_info = group_info, method = 'tSNE')
     automs.perform_PLSDA(group_info = {'PX_L': ['HF1_CP1_FZTM230002472-1A.mzML','HF1_CP1_FZTM230002473-1A.mzML','HF1_CP1_FZTM230002474-1A.mzML',
                                                 'HF1_CP1_FZTM230002475-1A.mzML', 'HF1_CP1_FZTM230002476-1A.mzML', 'HF1_CP1_FZTM230002477-1A.mzML'],
-                                       'PX_S': ['HF1_CP2_FZTM230002478-1A.mzML', 'HF1_CP2_FZTM230002479-1A.mzML', 'HF1_CP2_FZTM230002480-1A.mzML',
-                                                'HF1_CP2_FZTM230002481-1A.mzML','HF1_CP2_FZTM230002482-1A.mzML','HF1_CP2_FZTM230002483-1A.mzML']})
+                                       'ZX_L': ['HF1_CP3_FZTM230002484-1A.mzML', 'HF1_CP3_FZTM230002485-1A.mzML', 'HF1_CP3_FZTM230002486-1A.mzML',
+                                               'HF1_CP3_FZTM230002487-1A.mzML', 'HF1_CP3_FZTM230002488-1A.mzML', 'HF1_CP3_FZTM230002489-1A.mzML'],
+                                       'NX_L': ['HF1_CP5_FZTM230002496-1A.mzML', 'HF1_CP5_FZTM230002497-1A.mzML', 'HF1_CP5_FZTM230002498-1A.mzML',
+                                                'HF1_CP5_FZTM230002499-1A.mzML', 'HF1_CP5_FZTM230002500-1A.mzML', 'HF1_CP5_FZTM230002501-1A.mzML']
+                                       })
     automs.perform_RandomForest(group_info = group_info)

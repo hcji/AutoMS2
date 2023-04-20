@@ -452,7 +452,7 @@ class Dimensional_Reduction:
         else:
             plt.xlabel('uMAP 1')
             plt.ylabel('uMAP 2')
-        plt.legend()
+        plt.legend(loc='upper right', bbox_to_anchor=(1.25, 1.0))
         
 
 class PLSDA:
@@ -536,7 +536,7 @@ class PLSDA:
             x1, x2 = pts.T
             plt.plot(x1, x2, '.', color=colors[i], label = l)
             plot_point_cov(pts, nstd=3, alpha=0.2, color=colors[i])
-        plt.legend()
+        plt.legend(loc='upper right', bbox_to_anchor=(1.25, 1.0))
         plt.xlabel('PC 1')
         plt.ylabel('PC 2')
         
