@@ -150,7 +150,7 @@ class AutoMS:
         DRAnal.plot_2D()
         
     
-    def perform_PLSDA(self, group_info = None, n_components=2, n_permutations = 1000, annotated_only = True):
+    def perform_PLSDA(self, group_info = None, n_components=2, n_permutations = 1000, annotated_only = True, loo_test = True, permutation_test = True):
         if annotated_only:
             feature_table = self.feature_table_annotated
         else:
@@ -169,8 +169,10 @@ class AutoMS:
         plsda.scale_data()
         plsda.perform_PLSDA()
         plsda.plot_2D()
-        plsda.leave_one_out_test()
-        plsda.perform_permutation_test(n_permutations = n_permutations)
+        if loo_test:
+            plsda.leave_one_out_test()
+        if permutation_test:
+            plsda.perform_permutation_test(n_permutations = n_permutations)
         
         if annotated_only:
             self.feature_table_annotated['PLS_VIP'] = plsda.get_VIP()   
@@ -178,7 +180,7 @@ class AutoMS:
             self.feature_table['PLS_VIP'] = plsda.get_VIP()   
     
     
-    def perform_RandomForest(self, group_info = None, annotated_only = True, **args):
+    def perform_RandomForest(self, group_info = None, annotated_only = True, loo_test = False, **args):
         if annotated_only:
             feature_table = self.feature_table_annotated
         else:
@@ -196,12 +198,16 @@ class AutoMS:
         rf = analysis.RandomForest(x, y)
         rf.scale_data(**args)
         rf.perform_RF(**args)
-        rf.out_of_bag_score()
-        
+
         if annotated_only:
             self.feature_table_annotated['RF_VIP'] = rf.get_VIP() 
         else:
             self.feature_table['RF_VIP'] = rf.get_VIP() 
+        
+        if loo_test:
+            pass
+        else:
+            rf.out_of_bag_score()
     
     
     def perform_T_Test(self, group_info = None, annotated_only = True, **args):
@@ -303,8 +309,10 @@ class AutoMS:
         pass
     
     
+    '''
     def perform_biomarker_analysis(self):
         pass
+    '''
     
     
     def save_project(self, save_path):
@@ -316,6 +324,7 @@ class AutoMS:
         with open(save_path, 'rb') as f:
             obj_dict = pickle.load(f)
         self.__dict__.update(obj_dict)
+
 
 
 
@@ -351,8 +360,7 @@ if __name__ == '__main__':
     automs.preprocessing(impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, 
                          qc_samples = qc_samples, group_info = group_info)
     automs.match_feature_with_ms2()
-    automs.export_ms2_mgf("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang_tandem_ms.mgf")
-    automs.load_deepmass("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang_annotation")
+    automs.search_library("Library/references_spectrums_positive.pickle")
     automs.save_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
     
     automs.perform_dimensional_reduction(group_info = group_info, method = 'tSNE')

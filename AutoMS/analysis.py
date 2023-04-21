@@ -23,6 +23,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix, accuracy_score
+from xgboost import XGBClassifier
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
@@ -658,8 +659,54 @@ class RandomForest:
 
     def perform_RF(self, **args):
         self.model = RandomForestClassifier(oob_score = True, **args)
-        self.model.fit(self.x, self.y)
+        self.model.fit(self.x_scl, self.y)
     
+    
+    def leave_one_out_test(self):
+        X = np.array(self.x_scl)
+        y = self.y_label
+        model = self.model
+
+        n_samples = X.shape[0]
+        y_preds = []
+        print('perform leave-one-out test')
+        for i in tqdm(range(n_samples)):
+            test_indices = [i]
+            train_indices = list(set(range(n_samples)) - set(test_indices))
+            X_train = X[train_indices]
+            y_train = y[train_indices]
+            model.fit(X_train, y_train)
+            X_test = X[test_indices]
+            y_preds.append(model.predict(X_test)[0])
+
+        print('Classification matrics of leave-one-out test')
+        print(classification_report(y, y_preds))
+        
+        confusion = confusion_matrix(y, y_preds)
+        norm_confusion_matrix = confusion.astype('float') / confusion.sum(axis=1)[:, np.newaxis]
+        
+        class_labels = model.classes_
+        fig, ax = plt.subplots(dpi = 300)
+        im = ax.imshow(norm_confusion_matrix, cmap='Blues')
+        cbar = ax.figure.colorbar(im, ax=ax)
+
+        ax.set_xticks(np.arange(len(class_labels)))
+        ax.set_yticks(np.arange(len(class_labels)))
+        ax.set_xticklabels(class_labels)
+        ax.set_yticklabels(class_labels)
+        ax.set_xlabel('Predicted label')
+        ax.set_ylabel('True label')
+
+        thresh = norm_confusion_matrix.max() / 2.
+        for i in range(len(class_labels)):
+            for j in range(len(class_labels)):
+                ax.text(j, i, format(norm_confusion_matrix[i, j], '.2f'),
+                        ha="center", va="center",
+                        color="white" if norm_confusion_matrix[i, j] > thresh else "black")
+
+        plt.tight_layout()     
+        plt.show()
+        
     
     def out_of_bag_score(self):
         y = self.y
@@ -699,6 +746,74 @@ class RandomForest:
         vips = self.model.feature_importances_
         return vips
 
+
+class XGBoost:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.x_scl = x
+        self.model = None
+        
+    
+    def scale_data(self, with_mean = True, with_std = True):
+        scl = StandardScaler(with_mean = with_mean, with_std = with_std)
+        self.x_scl = scl.fit_transform(self.x)
+
+
+    def perform_XGBoost(self, **args):
+        self.model = XGBClassifier(**args)
+        self.model.fit(self.x_scl, self.y)
+        
+    
+    def leave_one_out_test(self):
+        X = np.array(self.x_scl)
+        y = self.y_label
+        model = self.model
+
+        n_samples = X.shape[0]
+        y_preds = []
+        print('perform leave-one-out test')
+        for i in tqdm(range(n_samples)):
+            test_indices = [i]
+            train_indices = list(set(range(n_samples)) - set(test_indices))
+            X_train = X[train_indices]
+            y_train = y[train_indices]
+            model.fit(X_train, y_train)
+            X_test = X[test_indices]
+            y_preds.append(model.predict(X_test)[0])
+
+        print('Classification matrics of leave-one-out test')
+        print(classification_report(y, y_preds))
+        
+        confusion = confusion_matrix(y, y_preds)
+        norm_confusion_matrix = confusion.astype('float') / confusion.sum(axis=1)[:, np.newaxis]
+    
+        fig, ax = plt.subplots(dpi = 300)
+        im = ax.imshow(norm_confusion_matrix, cmap='Blues')
+        cbar = ax.figure.colorbar(im, ax=ax)
+        
+        class_labels = model.classes_
+        ax.set_xticks(np.arange(len(class_labels)))
+        ax.set_yticks(np.arange(len(class_labels)))
+        ax.set_xticklabels(class_labels)
+        ax.set_yticklabels(class_labels)
+        ax.set_xlabel('Predicted label')
+        ax.set_ylabel('True label')
+
+        thresh = norm_confusion_matrix.max() / 2.
+        for i in range(len(class_labels)):
+            for j in range(len(class_labels)):
+                ax.text(j, i, format(norm_confusion_matrix[i, j], '.2f'),
+                        ha="center", va="center",
+                        color="white" if norm_confusion_matrix[i, j] > thresh else "black")
+
+        plt.tight_layout()     
+        plt.show()
+
+
+    def get_VIP(self):
+        vips = self.model.feature_importances_
+        return vips
 
     
 if __name__ == '__main__':

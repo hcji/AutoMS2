@@ -33,6 +33,7 @@ def export_to_mgf(feature_table, save_path):
         if spectrum is None:
             continue
         spectrum.set('compound_name', 'compound_{}'.format(i))
+        spectrum.metadata['title'] = spectrum.metadata['compound_name']
         if 'Adduct' not in feature_table.columns:
             spectrum.set('adduct', '[M+H]+')
         else:
