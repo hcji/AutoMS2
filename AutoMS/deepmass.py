@@ -9,7 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 import matchms.filtering as msfilters
-from matchms.exporting import save_as_mgf
+from matchms.exporting import save_as_mgf, save_as_msp
 from tqdm import tqdm
 
 def spectrum_processing(s):
@@ -46,6 +46,28 @@ def export_to_mgf(feature_table, save_path):
     if os.path.exists(save_path):
         os.remove(save_path)     
     save_as_mgf(spectrums, save_path)
+    print('Finished')
+
+
+def export_to_msp(feature_table, save_path):
+    for i in tqdm(feature_table.index):
+        spectrum = feature_table.loc[i, 'Tandem_MS']
+        if spectrum is None:
+            continue
+        spectrum.set('compound_name', 'compound_{}'.format(i))
+        if 'Adduct' not in feature_table.columns:
+            spectrum.set('PRECURSORTYPE', '[M+H]+')
+        else:
+            spectrum.set('PRECURSORTYPE', feature_table.loc[i, 'Adduct'])
+        if 'Ionmode' not in feature_table.columns:
+            spectrum.set('ionmode', 'Positive')
+        else:
+            spectrum.set('ionmode', feature_table.loc[i, 'Ionmode'])
+        spectrum = spectrum_processing(spectrum)
+        save_filename = os.path.join(save_path, '{}.msp'.format(i))
+        if os.path.exists(save_filename):
+            os.remove(save_filename)
+        save_as_msp([spectrum], save_filename)
     print('Finished')
 
 

@@ -52,6 +52,8 @@ class MolNet:
         names = self.names
         smiles = self.smiles
         mol_sim_matrix = self.matrix
+        if mol_sim_matrix is None:
+            raise ValueError('Please run compute_similarity_matrix first')
         
         G1 = nx.Graph()
         for i in range(mol_sim_matrix.shape[0]):
@@ -94,23 +96,32 @@ class MolNet:
         show(plot)
 
 
-    def get_subgraph(self, compound_name):
+    def get_subgraph(self, compound_name, maximum_compound = 12):
         G1 = self.G1
         names = self.names
+        mol_sim_matrix = self.matrix
         
         i = np.where(names == compound_name)[0]
         if len(i) == 0:
-            print('{} is not in the annotated list')
+            raise ValueError('{} is not in the annotated list'.format(compound_name))
         else:
             center_node = i[0]
         
         subgraph_nodes = set(nx.descendants(G1, center_node)) | {center_node}
         subgraph = G1.subgraph(subgraph_nodes)
+
+        if len(subgraph.nodes) > maximum_compound:
+            keep = np.argsort(-mol_sim_matrix[center_node,:])[0:maximum_compound]
+            subgraph_nodes = set(nx.descendants(G1, center_node)) & set(keep)
+            subgraph = G1.subgraph(subgraph_nodes)
+ 
         self.G2 = subgraph
         
         
     def plot_selected_subgraph(self):
         G2 = self.G2
+        if G2 is None:
+            raise ValueError('No sub-graph is selected')
         group_info = self.group_info
         feature_table_annotated = self.feature_table_annotated
         feature_table_annotated = feature_table_annotated.reset_index(drop = True)

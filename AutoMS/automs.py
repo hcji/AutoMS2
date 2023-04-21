@@ -13,11 +13,13 @@ import seaborn as sns
 from tqdm import tqdm
 
 from AutoMS import hpic
+from AutoMS import library
 from AutoMS import peakeval
 from AutoMS import matching
 from AutoMS import tandem
 from AutoMS import deepmass
 from AutoMS import analysis
+from AutoMS import molnet
 
 
 class AutoMS:
@@ -99,7 +101,15 @@ class AutoMS:
         spectrums = tandem.cluster_tandem_ms(spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
         self.feature_table = tandem.feature_spectrum_matching(self.feature_table, spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
 
-    
+
+    def search_library(self, lib_path, method = 'entropy', ms1_da = 0.01, ms2_da = 0.05, threshold = 0.5):
+        feature_table = self.feature_table
+        value_columns = list(self.peaks.keys())
+        lib = library.SpecLib(lib_path)
+        lib.search(feature_table = feature_table, method = method, ms1_da = ms1_da, ms2_da = ms2_da, threshold = threshold)
+        self.feature_table_annotated = lib.refine_annotated_table(value_columns = value_columns)
+        
+
     def export_ms2_mgf(self, save_path):
         deepmass.export_to_mgf(self.feature_table, save_path)
     
@@ -274,8 +284,15 @@ class AutoMS:
         sns.clustermap(x_, cmap="RdBu", figsize = (8, len(x_) / 5), yticklabels = yticklabels)
         
         
-    def perform_molecular_network(self, target_compound = None):
-        pass
+    def perform_molecular_network(self, threshold = 0.5, target_compound = None, group_info = None):
+        feature_table_annotated = self.feature_table_annotated
+        net = molnet.MolNet(feature_table_annotated, group_info)
+        net.compute_similarity_matrix()
+        net.create_network(threshold = threshold)
+        net.plot_global_network()
+        if target_compound is not None:
+            net.get_subgraph(target_compound = target_compound)
+            net.plot_selected_subgraph()
     
     
     def perform_spectral_network(self, target_compound = None):
@@ -302,14 +319,13 @@ class AutoMS:
 
 
 
-
-
 if __name__ == '__main__':
     
     data_path = "E:/Data/Guanghuoxiang/Convert_files_mzML/POS"
     automs = AutoMS(data_path)
     automs.find_features(min_intensity = 20000, max_items = 100000)
     automs.match_features()
+    automs.search_library("Library/references_spectrums_positive.pickle")
     automs.save_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
     
     data_path = "E:/Data/Guanghuoxiang/Convert_files_mzML/POS"
