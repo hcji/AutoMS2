@@ -8,9 +8,9 @@ Created on Fri Jun 17 09:04:55 2022
 import os
 import pickle
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from tqdm import tqdm
 
 from AutoMS import hpic
 from AutoMS import msdial
@@ -107,6 +107,26 @@ class AutoMS:
         spectrums = tandem.load_tandem_ms(files)
         spectrums = tandem.cluster_tandem_ms(spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
         self.feature_table = tandem.feature_spectrum_matching(self.feature_table, spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
+
+
+    def match_feature_with_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
+        feature_table = self.feature_table
+        annotation_table = pd.read_csv(annotation_file)
+        for i in feature_table.index:
+            k1 = np.abs(feature_table.loc[i, 'MZ'] - annotation_table.loc[:,'MZ']) < mz_tol
+            k2 = np.abs(feature_table.loc[i, 'RT'] - annotation_table.loc[:,'RT']) < rt_tol
+            kk = np.where(np.logical_and(k1, k2))[0]
+            if len(kk) == 0:
+                continue
+            elif len(kk) > 1:
+                k = kk[np.argmin(np.abs(feature_table.loc[i, 'MZ'] - annotation_table.loc[kk,'MZ']))]
+            else:
+                k = kk[0]
+            feature_table.loc[i, 'Annotated Name'] = annotation_table.loc[k,'Name']
+            feature_table.loc[i, 'InChIKey'] = annotation_table.loc[k,'InChIKey']
+            feature_table.loc[i, 'SMILES'] = annotation_table.loc[k,'SMILES']
+            feature_table.loc[i, 'Matching Score'] = 'external annotation'
+        self.feature_table = feature_table
 
 
     def search_library(self, lib_path, method = 'entropy', ms1_da = 0.01, ms2_da = 0.05, threshold = 0.5):
@@ -342,6 +362,7 @@ if __name__ == '__main__':
     automs.find_features(min_intensity = 20000, max_items = 100000)
     automs.evaluate_features()
     automs.match_features()
+    
     automs.search_library("Library/references_spectrums_positive.pickle")
     automs.save_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
     

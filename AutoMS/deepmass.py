@@ -74,27 +74,20 @@ def export_to_msp(feature_table, save_path):
 
 def link_to_deepmass(feature_table, deepmass_dir):
     print('load annotation results from deepmass dir')
-    smiles, inchikeys, names = [], [], []
     for i in tqdm(feature_table.index):
         path = os.path.join(deepmass_dir, 'compound_{}.csv'.format(i))
         if os.path.exists(path):
             anno = pd.read_csv(path)
             if len(anno) > 1:
-                [n, k, s] = anno.loc[0, ['Title', 'InChIKey', 'CanonicalSMILES']]
-                smiles.append(s)
-                inchikeys.append(k)
-                names.append(n)
+                [n, k, s, c] = anno.loc[0, ['Title', 'InChIKey', 'CanonicalSMILES', 'Consensus Score']]      
+                feature_table.loc[i, 'Annotated Name'] = n
+                feature_table.loc[i, 'InChIKey'] = k
+                feature_table.loc[i, 'SMILES'] = s
+                feature_table.loc[i, 'Matching Score'] = c
             else:
-                smiles.append(None)
-                inchikeys.append(None)
-                names.append(None)
+                continue
         else:
-            smiles.append(None)
-            inchikeys.append(None)
-            names.append(None)
-    feature_table['Annotated Name'] = names
-    feature_table['InChIKey'] = inchikeys
-    feature_table['CanonicalSMILES'] = smiles
+            continue
     return feature_table
 
 

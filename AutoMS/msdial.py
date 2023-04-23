@@ -17,11 +17,15 @@ def load_msdial_result(data_path, msdial_path):
     
     msdial = raw.iloc[4:,:-2]
     msdial.columns = raw.iloc[3,:-2]
-    keep_columns = ['Average Rt(min)', 'Average Mz', 'Adduct type', 'MS/MS spectrum'] + data_columns
+    keep_columns = ['Average Rt(min)', 'Average Mz', 'Adduct type', 'MS/MS spectrum', 
+                    'Metabolite name', 'INCHIKEY', 'SMILES', 'Dot product'] + data_columns
     msdial = msdial.loc[:, keep_columns]
-    msdial.columns = ['RT', 'MZ', 'Adduct', 'Tandem_MS'] + data_columns
+    msdial.columns = ['RT', 'MZ', 'Adduct', 'Tandem_MS', 
+                      'Annotated Name', 'InChIKey', 'SMILES', 'Matching Score'] + data_columns
     msdial['RT'] = np.round(60 * msdial['RT'].values.astype(float) ,3)
     msdial.loc[:,data_columns] = msdial.loc[:,data_columns].astype(float).replace(0, np.nan)
+    msdial.loc[:,['Annotated Name']] = msdial.loc[:,['Annotated Name']].replace('Unknown', None)
+    msdial.loc[:,['InChIKey', 'SMILES']] = msdial.loc[:,['InChIKey', 'SMILES']].astype(float).replace(np.nan, None)
     
     msmslist = []
     for i in msdial.index:

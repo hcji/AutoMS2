@@ -61,6 +61,10 @@ class FeatureMatching:
         intensities = pd.DataFrame(np.array(intensities), columns=files)    
         output = pd.DataFrame({'RT': rts, 'MZ': mzs, 'Score': scores})
         output = pd.concat([output, intensities], axis = 1)
+        output['Annotated Name'] = None
+        output['InChIKey'] = None
+        output['CanonicalSMILES'] = None
+        output['Matching Score'] = None
         self.feature_table = output
         
         
