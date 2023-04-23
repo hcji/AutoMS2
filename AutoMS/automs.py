@@ -13,6 +13,7 @@ import seaborn as sns
 from tqdm import tqdm
 
 from AutoMS import hpic
+from AutoMS import msdial
 from AutoMS import library
 from AutoMS import peakeval
 from AutoMS import matching
@@ -70,7 +71,13 @@ class AutoMS:
             peak = vals['peaks']
             pic = vals['pics']
             score = peakeval.evaluate_peaks(peak, pic)
-            self.peaks[f]['peaks']['score'] = score 
+            self.peaks[f]['peaks']['score'] = score
+            
+            
+    def load_msdial(self, msdial_path):
+        data_path = self.data_path
+        self.feature_table = msdial.load_msdial_result(data_path, msdial_path)
+        self.feature_table['Ionmode'] = self.ion_mode
     
     
     def match_features(self, method = 'simple', mz_tol = 0.01, rt_tol = 15, min_frac = 0.5):
@@ -196,7 +203,7 @@ class AutoMS:
             raise ValueError('Please input group information')
         
         rf = analysis.RandomForest(x, y)
-        rf.scale_data(**args)
+        rf.scale_data()
         rf.perform_RF(**args)
 
         if annotated_only:
@@ -333,6 +340,7 @@ if __name__ == '__main__':
     data_path = "E:/Data/Guanghuoxiang/Convert_files_mzML/POS"
     automs = AutoMS(data_path)
     automs.find_features(min_intensity = 20000, max_items = 100000)
+    automs.evaluate_features()
     automs.match_features()
     automs.search_library("Library/references_spectrums_positive.pickle")
     automs.save_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
