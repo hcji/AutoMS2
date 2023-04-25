@@ -32,7 +32,6 @@ class SpecLib:
             s = feature_table.loc[i, 'Tandem_MS']
             if s is None:
                 continue
-            
             mz = s.get('precursor_mz')
             if s.get('adduct') is None:
                 k = np.abs(mz - precursor_mzs) < ms1_da
@@ -60,13 +59,13 @@ class SpecLib:
     
     def refine_annotated_table(self, value_columns):
         feature_table = self.feature_table
-        print('refine feature table with deepmass annotation')
+        print('refine feature table with annotation')
         keep = []
-        uni_comp = list(set(feature_table['InChIKey']))
-        for key in tqdm(uni_comp):
-            if key is None:
+        uni_comp = list(set(feature_table['Annotated Name']))
+        for comp in tqdm(uni_comp):
+            if comp is None:
                 continue
-            wh = np.where(feature_table['InChIKey'] == key)[0]
+            wh = np.where(feature_table['Annotated Name'] == comp)[0]
             if len(wh) == 1:
                 keep.append(wh[0])
             else:

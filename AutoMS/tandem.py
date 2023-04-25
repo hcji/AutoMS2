@@ -86,7 +86,7 @@ def cluster_tandem_ms(all_spectrums, mz_tol = 0.01, rt_tol = 15):
         cos_distance = 1 - cosine_similarity(spectrums_vectors)
         cluster = AgglomerativeClustering(n_clusters=None, metric='precomputed', linkage='average', distance_threshold = 0.4)
         labels = cluster.fit_predict(cos_distance)
-        wh  = np.where(labels == stats.mode(labels))[0]
+        wh  = np.where(labels == stats.mode(labels, keepdims = False))[0]
         spectrums_select = np.array(spectrums_i)[wh]
         
         mz_list, intensity_list = consensus_spectrum(spectrums_select, mz_window = 0.1)        

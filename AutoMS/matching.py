@@ -15,7 +15,7 @@ class FeatureMatching:
         self.peaks = peaks
         self.feature_table = None
         
-    def simple_matching(self, mz_tol = 0.01, rt_tol = 15):
+    def simple_matching(self, mz_tol = 0.01, rt_tol = 20):
         peaks = self.peaks
         files = list(peaks.keys())
         rts, mzs, intensities, scores = [], [], [], []
@@ -57,13 +57,13 @@ class FeatureMatching:
                         scores[k][i] = peak['score'][j]
                 else:
                     pass
-        scores = np.nanmean(np.array(scores), axis = 1)
+        scores = np.nanmedian(np.array(scores), axis = 1)
         intensities = pd.DataFrame(np.array(intensities), columns=files)    
         output = pd.DataFrame({'RT': rts, 'MZ': mzs, 'Score': scores})
         output = pd.concat([output, intensities], axis = 1)
         output['Annotated Name'] = None
         output['InChIKey'] = None
-        output['CanonicalSMILES'] = None
+        output['SMILES'] = None
         output['Matching Score'] = None
         self.feature_table = output
         
