@@ -26,6 +26,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 from xgboost import XGBClassifier
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
 from matplotlib.patches import Ellipse
 from seaborn import heatmap
 from adjustText import adjust_text
@@ -264,6 +265,7 @@ class Preprocessing:
         """
         print('impute missing values #1')
         self.impute_missing_features(impute_method = impute_method, **args)
+        self.normalize()
         print('filter invalid features with RSDs (with QC samples)')
         self.filter_RSD(qc_samples = qc_samples, rsd_threshold = 0.3)
         print('filter outliers')

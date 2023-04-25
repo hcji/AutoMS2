@@ -81,7 +81,7 @@ class AutoMS:
         self.feature_table['Ionmode'] = self.ion_mode
     
     
-    def match_features(self, method = 'simple', mz_tol = 0.01, rt_tol = 15, min_frac = 0.5):
+    def match_features(self, method = 'simple', mz_tol = 0.01, rt_tol = 20, min_frac = 0.5):
         if self.peaks is None:
             raise ValueError('Please find peak first')
         linker = matching.FeatureMatching(self.peaks)
@@ -108,14 +108,14 @@ class AutoMS:
         self.feature_table.loc[:,files] = x_prep
     
     
-    def match_feature_with_ms2(self, mz_tol = 0.01, rt_tol = 15):
+    def match_features_with_ms2(self, mz_tol = 0.01, rt_tol = 15):
         files = [os.path.join(self.data_path, f) for f in list(self.peaks.keys())]
         spectrums = tandem.load_tandem_ms(files)
         spectrums = tandem.cluster_tandem_ms(spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
         self.feature_table = tandem.feature_spectrum_matching(self.feature_table, spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
 
 
-    def match_feature_with_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
+    def match_features_with_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
         feature_table = self.feature_table
         annotation_table = pd.read_csv(annotation_file)
         for i in feature_table.index:
@@ -368,14 +368,7 @@ if __name__ == '__main__':
     automs.find_features(min_intensity = 20000, max_items = 100000)
     automs.evaluate_features()
     automs.match_features()
-    
-    automs.search_library("Library/references_spectrums_positive.pickle")
-    automs.save_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
-    
-    data_path = "E:/Data/Guanghuoxiang/Convert_files_mzML/POS"
-    automs = AutoMS(data_path)
-    automs.load_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
-    
+
     qc_samples = ['HF1_1578259_CP_QC1.mzML', 'HF1_1578259_CP_QC2.mzML', 'HF1_1578259_CP_QC3.mzML', 'HF1_1578259_CP_QC4.mzML', 'HF1_1578259_CP_QC5.mzML']
     group_info = {'QC': ['HF1_1578259_CP_QC1.mzML', 'HF1_1578259_CP_QC2.mzML', 'HF1_1578259_CP_QC3.mzML', 'HF1_1578259_CP_QC4.mzML', 'HF1_1578259_CP_QC5.mzML'],
                   'PX_L': ['HF1_CP1_FZTM230002472-1A.mzML','HF1_CP1_FZTM230002473-1A.mzML','HF1_CP1_FZTM230002474-1A.mzML',
@@ -392,18 +385,13 @@ if __name__ == '__main__':
                            'HF1_CP6_FZTM230002505-1A.mzML', 'HF1_CP6_FZTM230002506-1A.mzML', 'HF1_CP6_FZTM230002507-1A.mzML']
                   }
     
-    automs.preprocessing(impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, 
-                         qc_samples = qc_samples, group_info = group_info)
-    automs.match_feature_with_ms2()
+    automs.match_features_with_external_annotation("E:/Data/Guanghuoxiang/meta_intensity_pos_classfire.csv")
+    automs.match_features_with_ms2()
     automs.search_library("Library/references_spectrums_positive.pickle")
     automs.save_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
     
-    automs.perform_dimensional_reduction(group_info = group_info, method = 'tSNE')
-    automs.perform_PLSDA(group_info = {'PX_L': ['HF1_CP1_FZTM230002472-1A.mzML','HF1_CP1_FZTM230002473-1A.mzML','HF1_CP1_FZTM230002474-1A.mzML',
-                                                'HF1_CP1_FZTM230002475-1A.mzML', 'HF1_CP1_FZTM230002476-1A.mzML', 'HF1_CP1_FZTM230002477-1A.mzML'],
-                                       'ZX_L': ['HF1_CP3_FZTM230002484-1A.mzML', 'HF1_CP3_FZTM230002485-1A.mzML', 'HF1_CP3_FZTM230002486-1A.mzML',
-                                               'HF1_CP3_FZTM230002487-1A.mzML', 'HF1_CP3_FZTM230002488-1A.mzML', 'HF1_CP3_FZTM230002489-1A.mzML'],
-                                       'NX_L': ['HF1_CP5_FZTM230002496-1A.mzML', 'HF1_CP5_FZTM230002497-1A.mzML', 'HF1_CP5_FZTM230002498-1A.mzML',
-                                                'HF1_CP5_FZTM230002499-1A.mzML', 'HF1_CP5_FZTM230002500-1A.mzML', 'HF1_CP5_FZTM230002501-1A.mzML']
-                                       })
-    automs.perform_RandomForest(group_info = group_info)
+    
+    data_path = "E:/Data/Guanghuoxiang/Convert_files_mzML/POS"
+    automs = AutoMS(data_path)
+    automs.load_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
+    
