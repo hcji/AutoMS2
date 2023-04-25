@@ -21,9 +21,9 @@ def load_msdial_result(data_path, msdial_path):
                     'Metabolite name', 'INCHIKEY', 'SMILES', 'Dot product'] + data_columns
     msdial = msdial.loc[:, keep_columns]
     msdial.columns = ['RT', 'MZ', 'Adduct', 'Tandem_MS', 
-                      'Annotated Name', 'InChIKey', 'SMILES', 'Matching Score'] + data_columns
+                      'Annotated Name', 'InChIKey', 'SMILES', 'Matching Score'] + files
     msdial['RT'] = np.round(60 * msdial['RT'].values.astype(float) ,3)
-    msdial.loc[:,data_columns] = msdial.loc[:,data_columns].astype(float).replace(0, np.nan)
+    msdial.loc[:,files] = msdial.loc[:,files].astype(float).replace(0, np.nan)
     msdial.loc[:,['Annotated Name']] = msdial.loc[:,['Annotated Name']].replace('Unknown', None)
     msdial.loc[:,['InChIKey', 'SMILES']] = msdial.loc[:,['InChIKey', 'SMILES']].astype(float).replace(np.nan, None)
     
@@ -45,5 +45,6 @@ def load_msdial_result(data_path, msdial_path):
                                                "precursor_mz": precursor_mz,
                                                "retention_time": precursor_rt}))
     msdial['Tandem_MS'] = msmslist
+    msdial = msdial.reset_index(drop = True) 
     return msdial
     

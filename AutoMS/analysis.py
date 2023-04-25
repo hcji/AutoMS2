@@ -151,7 +151,7 @@ class Preprocessing:
         return x_rsd
     
     
-    def impute_missing_features(self, impute_method = 'KNN', **args):
+    def impute_missing_features(self, impute_method = 'KNN', min_frac = 0.5, **args):
         """
         Impute missing values in the data.
 

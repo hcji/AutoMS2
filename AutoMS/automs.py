@@ -76,6 +76,7 @@ class AutoMS:
             
     def load_msdial(self, msdial_path):
         data_path = self.data_path
+        self.peaks = {f: {} for f in os.listdir(data_path)}
         self.feature_table = msdial.load_msdial_result(data_path, msdial_path)
         self.feature_table['Ionmode'] = self.ion_mode
     
@@ -92,13 +93,18 @@ class AutoMS:
         self.feature_table['Ionmode'] = self.ion_mode
     
     
-    def preprocessing(self, impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, qc_samples = None, group_info = None, **args):
+    def preprocessing(self, impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, min_frac = 0.5, qc_samples = None, group_info = None, **args):
         if self.feature_table is None:
             raise ValueError('Please match peak first')
         files = list(self.peaks.keys())
+        intensities = self.feature_table[files]
+        count_nan = np.sum(~np.isnan(intensities), axis = 1)
+        wh = np.where(count_nan / intensities.shape[1] >= min_frac)[0]
+        self.feature_table = self.feature_table.loc[wh,:]
+        self.feature_table = self.feature_table.reset_index(drop = True) 
         x = self.feature_table.loc[:,files]
         preprocessor = analysis.Preprocessing(x)
-        x_prep = preprocessor.one_step(impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, qc_samples = qc_samples, group_info = group_info, **args)
+        x_prep = preprocessor.one_step(impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, min_frac = 0.5, qc_samples = qc_samples, group_info = group_info, **args)
         self.feature_table.loc[:,files] = x_prep
     
     
