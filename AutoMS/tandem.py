@@ -131,8 +131,8 @@ def feature_spectrum_matching(feature_table, spectrums, mz_tol = 0.01, rt_tol = 
     rts = spectrums.loc[:,'rt'].values
     tandem_ms = []
     for i in tqdm(feature_table.index):
-        rt = feature_table.loc[i, 'RT']
-        mz = feature_table.loc[i, 'MZ']
+        rt = float(feature_table.loc[i, 'RT'])
+        mz = float(feature_table.loc[i, 'MZ'])
         k1 = np.abs(mz - mzs) < mz_tol
         k2 = np.abs(rt - rts) < rt_tol
         kk = np.where(np.logical_and(k1, k2))[0]

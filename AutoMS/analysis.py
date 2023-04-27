@@ -24,6 +24,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix, accuracy_score
 from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
@@ -443,9 +444,9 @@ class Dimensional_Reduction:
         for i, l in enumerate(lbs):
             k = np.where(y == l)[0]
             pts = x_map[k,:]
-            x1, x2 = pts.T
+            x1, x2 = pts[:,:2].T
             plt.plot(x1, x2, '.', color=colors[i], label = l)
-            plot_point_cov(pts, nstd=3, alpha=0.2, color=colors[i])
+            plot_point_cov(pts[:,:2], nstd=3, alpha=0.2, color=colors[i])
         
         if type(self.model) == sklearn.decomposition._pca.PCA:
             plt.xlabel('PC1 ({} %)'.format(round(self.model.explained_variance_ratio_[0] * 100, 2)))
@@ -537,9 +538,9 @@ class PLSDA:
         for i, l in enumerate(lbs):
             k = np.where(y == l)[0]
             pts = x_map[k,:]
-            x1, x2 = pts.T
+            x1, x2 = pts[:,:2].T
             plt.plot(x1, x2, '.', color=colors[i], label = l)
-            plot_point_cov(pts, nstd=3, alpha=0.2, color=colors[i])
+            plot_point_cov(pts[:,:2], nstd=3, alpha=0.2, color=colors[i])
         plt.legend(loc='upper right', bbox_to_anchor=(1.25, 1.0))
         plt.xlabel('PC 1')
         plt.ylabel('PC 2')
@@ -649,7 +650,7 @@ class PLSDA:
 class RandomForest:
     def __init__(self, x, y):
         self.x = x
-        self.y = y
+        self.y = np.array(y)
         self.x_scl = x
         self.model = None
         
@@ -666,7 +667,7 @@ class RandomForest:
     
     def leave_one_out_test(self):
         X = np.array(self.x_scl)
-        y = self.y_label
+        y = self.y
         model = self.model
 
         n_samples = X.shape[0]
@@ -749,10 +750,10 @@ class RandomForest:
         return vips
 
 
-class XGBoost:
+class GradientBoost:
     def __init__(self, x, y):
         self.x = x
-        self.y = y
+        self.y = np.array(y)
         self.x_scl = x
         self.model = None
         
@@ -765,11 +766,16 @@ class XGBoost:
     def perform_XGBoost(self, **args):
         self.model = XGBClassifier(**args)
         self.model.fit(self.x_scl, self.y)
-        
+    
+    
+    def perform_LightGBM(self, **args):
+        self.model = LGBMClassifier(**args)
+        self.model.fit(self.x_scl, self.y)
+    
     
     def leave_one_out_test(self):
         X = np.array(self.x_scl)
-        y = self.y_label
+        y = self.y
         model = self.model
 
         n_samples = X.shape[0]

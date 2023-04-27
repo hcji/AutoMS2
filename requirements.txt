@@ -11,4 +11,6 @@ matchms==0.18.0
 umap-learn==0.5.3
 statsmodels == 0.13.5
 adjustText == 0.8
+lightgbm == 3.3.5
+xgboost == 1.2.1
 tqdm

@@ -118,9 +118,11 @@ class AutoMS:
     def match_features_with_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
         feature_table = self.feature_table
         annotation_table = pd.read_csv(annotation_file)
+        annotation_table.loc[:,'MZ'] = annotation_table.loc[:,'MZ'].astype(float)
+        annotation_table.loc[:,'RT'] = annotation_table.loc[:,'RT'].astype(float)
         for i in feature_table.index:
-            k1 = np.abs(feature_table.loc[i, 'MZ'] - annotation_table.loc[:,'MZ']) < mz_tol
-            k2 = np.abs(feature_table.loc[i, 'RT'] - annotation_table.loc[:,'RT']) < rt_tol
+            k1 = np.abs(float(feature_table.loc[i, 'MZ']) - annotation_table.loc[:,'MZ']) < mz_tol
+            k2 = np.abs(float(feature_table.loc[i, 'RT']) - annotation_table.loc[:,'RT']) < rt_tol
             kk = np.where(np.logical_and(k1, k2))[0]
             if len(kk) == 0:
                 continue
@@ -213,7 +215,7 @@ class AutoMS:
             self.feature_table['PLS_VIP'] = plsda.get_VIP()   
     
     
-    def perform_RandomForest(self, group_info = None, annotated_only = True, loo_test = False, **args):
+    def perform_RandomForest(self, group_info = None, annotated_only = True, loo_test = True, **args):
         if annotated_only:
             feature_table = self.feature_table_annotated
         else:
@@ -238,9 +240,42 @@ class AutoMS:
             self.feature_table['RF_VIP'] = rf.get_VIP() 
         
         if loo_test:
-            pass
+            rf.leave_one_out_test()
         else:
             rf.out_of_bag_score()
+
+
+    def perform_GradientBoost(self, model = 'XGBoost', group_info = None, annotated_only = True, loo_test = True, **args):
+        if annotated_only:
+            feature_table = self.feature_table_annotated
+        else:
+            feature_table = self.feature_table
+        if feature_table is None:
+            raise ValueError('Please match peak or load deepmass result, first')
+            
+        if group_info is not None:
+            files_keep = [value for key in group_info for value in group_info[key]]
+            x = feature_table.loc[:,files_keep].T
+            y = [key for key in group_info.keys() for f in files_keep if f in group_info[key]]
+        else:
+            raise ValueError('Please input group information')
+        
+        xgb = analysis.GradientBoost(x, y)
+        xgb.scale_data()
+        if model == 'XGBoost':
+            xgb.perform_XGBoost(**args)
+        elif model == 'LightGBM':
+            xgb.perform_LightGBM(**args)
+        else:
+            raise IOError('invalid model')
+
+        if annotated_only:
+            self.feature_table_annotated['GradientBoost_VIP'] = xgb.get_VIP() 
+        else:
+            self.feature_table['GradientBoost_VIP'] = xgb.get_VIP() 
+        
+        if loo_test:
+            xgb.leave_one_out_test()
     
     
     def perform_T_Test(self, group_info = None, annotated_only = True, **args):
