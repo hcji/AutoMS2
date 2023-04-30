@@ -333,7 +333,7 @@ class AutoMS:
         self.biomarker_table = feature_table.loc[selected, :]
         
     
-    def perform_heatmap(self, biomarker_only = True, group_info = None, hide_ytick = True):
+    def perform_heatmap(self, biomarker_only = True, group_info = None, hide_xticks = False, hide_ytick = False):
         if biomarker_only:
             biomarker_table = self.biomarker_table
         else:
@@ -355,6 +355,8 @@ class AutoMS:
             yticklabels = True
         if hide_ytick:
             yticklabels = False
+        if hide_xticks:
+            xticklabels = False
         sns.clustermap(x_, cmap="RdBu", figsize = (8, len(x_) / 5), yticklabels = yticklabels)
         
         
