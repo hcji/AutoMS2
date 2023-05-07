@@ -24,18 +24,23 @@ from AutoMS import molnet
 
 
 class AutoMS:
-    def __init__(self, data_path, ion_mode = 'positive'):
+    def __init__(self, ion_mode = 'positive'):
         """
         Arguments:
             data_path: string
                 path to the dataset locally
         """
-        self.data_path = data_path
+        self.data_path = None
         self.ion_mode = ion_mode
         self.peaks = None
         self.feature_table = None
         self.feature_table_annotated = None
         self.biomarker_table = None
+        
+    
+    def load_files(self, data_path):
+        self.data_path = data_path
+        self.files = os.listdir(self.data_path)
     
     
     def find_features(self, min_intensity, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000):
@@ -51,7 +56,7 @@ class AutoMS:
                 minimum intensity of a peak.
         """
         output = {}
-        files = os.listdir(self.data_path)
+        files = self.files
         for i, f in enumerate(files):
             print('processing {}, {}/{} files, set maximum {} ion traces'.format(f, 1+i, len(files), max_items))
             peaks, pics = hpic.hpic(os.path.join(self.data_path, f), 
