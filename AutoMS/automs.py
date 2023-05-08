@@ -310,7 +310,7 @@ class AutoMS:
             self.feature_table['T_Test_P_{}'.format('_'.join(group_info.keys()))] = t_test.p_values
     
     
-    def select_biomarker(self, criterion = {'PLS_VIP': ['>', 1.5]}, annotated_only = True):
+    def select_biomarker(self, criterion = {'PLS_VIP': ['>', 1.5]}, combination = 'union', annotated_only = True):
         if annotated_only:
             feature_table = self.feature_table_annotated
         else:
@@ -334,7 +334,10 @@ class AutoMS:
                 res_i = vals < thres
             else:
                 raise ValueError('{} is not a compare function'.format(cir[0]))
-            selected = np.logical_and(selected, res_i)
+            if combination == 'union':
+                selected = np.logical_or(selected, res_i)
+            else:
+                selected = np.logical_and(selected, res_i)
         self.biomarker_table = feature_table.loc[selected, :]
         
     
@@ -352,7 +355,7 @@ class AutoMS:
         else:
             x = biomarker_table.loc[:,files]
         x_mean = np.mean(x, axis = 1)
-        x_ = x.div(x_mean, axis=0)
+        x_ = np.log2(x.div(x_mean, axis=0))
         plt.figure(dpi = 300)
         if 'Annotated Name' in list(biomarker_table.columns):
             yticklabels = list(biomarker_table['Annotated Name'])
@@ -362,7 +365,9 @@ class AutoMS:
             yticklabels = False
         if hide_xticks:
             xticklabels = False
-        sns.clustermap(x_, cmap="RdBu", figsize = (8, len(x_) / 5), yticklabels = yticklabels)
+            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), xticklabels = xticklabels, yticklabels = yticklabels)
+        else:
+            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), yticklabels = yticklabels)
         
         
     def perform_molecular_network(self, threshold = 0.5, target_compound = None, group_info = None):
