@@ -318,7 +318,10 @@ class AutoMS:
         if feature_table is None:
             raise ValueError('Please match peak or load deepmass result, first')
         
-        selected = np.repeat(True, len(feature_table))
+        if combination == 'union':
+            selected = np.repeat(False, len(feature_table))
+        else:
+            selected = np.repeat(True, len(feature_table))
         for i, cir in criterion.items():
             if i not in feature_table.columns:
                 raise ValueError('{} not in columns of feature table, please check if {} is calculated'.format(i,i))
