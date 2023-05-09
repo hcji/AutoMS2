@@ -435,7 +435,7 @@ if __name__ == '__main__':
                            'HF1_CP6_FZTM230002505-1A.mzML', 'HF1_CP6_FZTM230002506-1A.mzML', 'HF1_CP6_FZTM230002507-1A.mzML']
                   }
     
-    automs.match_features_with_external_annotation("E:/Data/Guanghuoxiang/meta_intensity_pos_classfire.csv")
+    # automs.match_features_with_external_annotation("E:/Data/Guanghuoxiang/meta_intensity_pos_classfire.csv")
     automs.match_features_with_ms2()
     automs.search_library("Library/references_spectrums_positive.pickle")
     automs.save_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
