@@ -8,7 +8,10 @@ Created on Fri Apr 21 08:42:40 2023
 
 import pickle
 import numpy as np
+import json
+import requests
 from tqdm import tqdm
+from bs4 import BeautifulSoup
 
 from AutoMS.SpectralEntropy import similarity as calc_similarity
 
@@ -49,11 +52,15 @@ class SpecLib:
             if np.max(scores) < threshold:
                 continue
             else:
-                k = k[np.argmax(scores)]                
+                k = k[np.argmax(scores)]
                 feature_table.loc[i, 'Annotated Name'] = lib[k].get('compound_name')
                 feature_table.loc[i, 'InChIKey'] = lib[k].get('inchikey')
                 feature_table.loc[i, 'SMILES'] = lib[k].get('smiles')
-                feature_table.loc[i, 'Matching Score'] = np.max(scores)         
+                feature_table.loc[i, 'Matching Score'] = np.max(scores)
+                if lib[k].get('class') is None:
+                    feature_table.loc[i, 'Class'] = self.predict_class(lib[k].get('smiles'))
+                else:
+                    feature_table.loc[i, 'Class'] = lib[k].get('class')
         self.feature_table = feature_table
     
     
@@ -74,5 +81,13 @@ class SpecLib:
         keep = np.sort(keep)
         feature_table_annotated = feature_table.loc[keep,:]
         return feature_table_annotated
+    
+    
+    def predict_class(self, smi, timeout = 60):
+        url = 'https://npclassifier.ucsd.edu/classify?smiles={}'.format(smi)
+        response = requests.get(url, timeout=timeout)
+        soup = BeautifulSoup(response.content, "html.parser")
+        output = json.loads(str(soup))
+        return output
     
     

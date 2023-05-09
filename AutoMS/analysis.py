@@ -786,7 +786,7 @@ class GradientBoost:
             train_indices = list(set(range(n_samples)) - set(test_indices))
             X_train = X[train_indices]
             y_train = y[train_indices]
-            model.fit(X_train, y_train)
+            model = model.fit(X_train, y_train)
             X_test = X[test_indices]
             y_preds.append(model.predict(X_test)[0])
 
