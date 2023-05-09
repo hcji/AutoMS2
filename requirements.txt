@@ -1,5 +1,4 @@
 fitter==1.2.3
-hdbscan==0.8.29
 matplotlib==3.5.3
 pandas==1.4.3
 pymzml==2.5.1
@@ -13,4 +12,5 @@ statsmodels == 0.13.5
 adjustText == 0.8
 lightgbm == 3.3.5
 xgboost == 1.2.1
+bokeh == 2.4.3
 tqdm

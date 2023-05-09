@@ -24,18 +24,23 @@ from AutoMS import molnet
 
 
 class AutoMS:
-    def __init__(self, data_path, ion_mode = 'positive'):
+    def __init__(self, ion_mode = 'positive'):
         """
         Arguments:
             data_path: string
                 path to the dataset locally
         """
-        self.data_path = data_path
+        self.data_path = None
         self.ion_mode = ion_mode
         self.peaks = None
         self.feature_table = None
         self.feature_table_annotated = None
         self.biomarker_table = None
+        
+    
+    def load_files(self, data_path):
+        self.data_path = data_path
+        self.files = os.listdir(self.data_path)
     
     
     def find_features(self, min_intensity, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000):
@@ -51,7 +56,7 @@ class AutoMS:
                 minimum intensity of a peak.
         """
         output = {}
-        files = os.listdir(self.data_path)
+        files = self.files
         for i, f in enumerate(files):
             print('processing {}, {}/{} files, set maximum {} ion traces'.format(f, 1+i, len(files), max_items))
             peaks, pics = hpic.hpic(os.path.join(self.data_path, f), 
@@ -305,7 +310,7 @@ class AutoMS:
             self.feature_table['T_Test_P_{}'.format('_'.join(group_info.keys()))] = t_test.p_values
     
     
-    def select_biomarker(self, criterion = {'PLS_VIP': ['>', 1.5]}, annotated_only = True):
+    def select_biomarker(self, criterion = {'PLS_VIP': ['>', 1.5]}, combination = 'union', annotated_only = True):
         if annotated_only:
             feature_table = self.feature_table_annotated
         else:
@@ -313,7 +318,10 @@ class AutoMS:
         if feature_table is None:
             raise ValueError('Please match peak or load deepmass result, first')
         
-        selected = np.repeat(True, len(feature_table))
+        if combination == 'union':
+            selected = np.repeat(False, len(feature_table))
+        else:
+            selected = np.repeat(True, len(feature_table))
         for i, cir in criterion.items():
             if i not in feature_table.columns:
                 raise ValueError('{} not in columns of feature table, please check if {} is calculated'.format(i,i))
@@ -329,11 +337,14 @@ class AutoMS:
                 res_i = vals < thres
             else:
                 raise ValueError('{} is not a compare function'.format(cir[0]))
-            selected = np.logical_and(selected, res_i)
+            if combination == 'union':
+                selected = np.logical_or(selected, res_i)
+            else:
+                selected = np.logical_and(selected, res_i)
         self.biomarker_table = feature_table.loc[selected, :]
         
     
-    def perform_heatmap(self, biomarker_only = True, group_info = None, hide_ytick = True):
+    def perform_heatmap(self, biomarker_only = True, group_info = None, hide_xticks = False, hide_ytick = False):
         if biomarker_only:
             biomarker_table = self.biomarker_table
         else:
@@ -347,7 +358,7 @@ class AutoMS:
         else:
             x = biomarker_table.loc[:,files]
         x_mean = np.mean(x, axis = 1)
-        x_ = x.div(x_mean, axis=0)
+        x_ = np.log2(x.div(x_mean, axis=0))
         plt.figure(dpi = 300)
         if 'Annotated Name' in list(biomarker_table.columns):
             yticklabels = list(biomarker_table['Annotated Name'])
@@ -355,7 +366,11 @@ class AutoMS:
             yticklabels = True
         if hide_ytick:
             yticklabels = False
-        sns.clustermap(x_, cmap="RdBu", figsize = (8, len(x_) / 5), yticklabels = yticklabels)
+        if hide_xticks:
+            xticklabels = False
+            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), xticklabels = xticklabels, yticklabels = yticklabels)
+        else:
+            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), yticklabels = yticklabels)
         
         
     def perform_molecular_network(self, threshold = 0.5, target_compound = None, group_info = None):
