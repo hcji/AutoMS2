@@ -413,8 +413,8 @@ class AutoMS:
 
 if __name__ == '__main__':
     
-    data_path = "E:/Data/Guanghuoxiang/Convert_files_mzML/POS"
-    automs = AutoMS(data_path)
+    automs = AutoMS()
+    automs.load_files("E:/Data/Guanghuoxiang/Convert_files_mzML/POS")
     automs.find_features(min_intensity = 20000, max_items = 100000)
     automs.evaluate_features()
     automs.match_features()
