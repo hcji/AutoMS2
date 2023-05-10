@@ -43,7 +43,7 @@ class AutoMS:
         self.files = os.listdir(self.data_path)
     
     
-    def find_features(self, min_intensity, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000):
+    def find_features(self, min_intensity, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000, keep_pics=False):
         """
         Arguments:
             min_snr: float
@@ -65,7 +65,10 @@ class AutoMS:
                                     mass_inv = mass_inv, 
                                     rt_inv = rt_inv,
                                     max_items = max_items)
-            output[f] = {'peaks': peaks, 'pics': pics}
+            if keep_pics:
+                output[f] = {'peaks': peaks, 'pics': pics}
+            else:
+                output[f] = {'peaks': peaks, 'pics': None}
         self.peaks = output
         
     
