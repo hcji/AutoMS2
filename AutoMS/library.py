@@ -87,7 +87,10 @@ class SpecLib:
         url = 'https://npclassifier.ucsd.edu/classify?smiles={}'.format(smi)
         response = requests.get(url, timeout=timeout)
         soup = BeautifulSoup(response.content, "html.parser")
-        output = json.loads(str(soup))
-        return output
+        output = json.loads(str(soup))['class_results']
+        if len(output) >= 1:
+            return output[0]
+        else:
+            return None
     
     
