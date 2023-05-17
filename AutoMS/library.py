@@ -26,7 +26,7 @@ class SpecLib:
         self.feature_table = None
     
     
-    def search(self, feature_table, method = 'entropy', ms1_da=0.01, ms2_da=0.05, threshold = 0.5):
+    def search(self, feature_table, method = 'entropy', ms1_da=0.01, ms2_da=0.05, threshold = 0.5, synonyms = True):
         lib = self.lib
         precursor_mzs = self.precursor_mzs
         adducts = self.adducts
@@ -53,7 +53,10 @@ class SpecLib:
                 continue
             else:
                 k = k[np.argmax(scores)]
-                feature_table.loc[i, 'Annotated Name'] = lib[k].get('compound_name')
+                if synonyms:
+                    feature_table.loc[i, 'Annotated Name'] = self.get_synonyms(lib[k].get('smiles'))
+                else:
+                    feature_table.loc[i, 'Annotated Name'] = lib[k].get('compound_name')
                 feature_table.loc[i, 'InChIKey'] = lib[k].get('inchikey')
                 feature_table.loc[i, 'SMILES'] = lib[k].get('smiles')
                 feature_table.loc[i, 'Matching Score'] = np.max(scores)
@@ -85,9 +88,25 @@ class SpecLib:
     
     def predict_class(self, smi, timeout = 60):
         url = 'https://npclassifier.ucsd.edu/classify?smiles={}'.format(smi)
-        response = requests.get(url, timeout=timeout)
-        soup = BeautifulSoup(response.content, "html.parser")
-        output = json.loads(str(soup))['class_results']
+        try:
+            response = requests.get(url, timeout=timeout)
+            soup = BeautifulSoup(response.content, "html.parser") 
+            output = json.loads(str(soup))['class_results']
+        except:
+            return None
+        if len(output) >= 1:
+            return output[0]
+        else:
+            return None
+    
+    def get_synonyms(self, smi, timeout = 60):
+        url = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{}/Synonyms/json'.format(smi)
+        try:
+            response = requests.get(url, timeout=timeout)
+            soup = BeautifulSoup(response.content, "html.parser") 
+            output = json.loads(str(soup))['InformationList']['Information'][0]['Synonym']
+        except:
+            return None
         if len(output) >= 1:
             return output[0]
         else:

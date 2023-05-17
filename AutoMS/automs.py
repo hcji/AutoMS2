@@ -371,10 +371,10 @@ class AutoMS:
             yticklabels = False
         if hide_xticks:
             xticklabels = False
-            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), xticklabels = xticklabels, yticklabels = yticklabels)
+            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), xticklabels = xticklabels, yticklabels = yticklabels, vmin=-np.max(np.abs(x_)), vmax=np.max(np.abs(x_)))
         else:
-            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), yticklabels = yticklabels)
-        
+            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), yticklabels = yticklabels, vmin=-np.max(np.abs(x_)), vmax=np.max(np.abs(x_)))
+
         
     def perform_molecular_network(self, threshold = 0.5, target_compound = None, group_info = None):
         feature_table_annotated = self.feature_table_annotated
