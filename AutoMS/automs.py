@@ -23,38 +23,20 @@ from AutoMS import analysis
 from AutoMS import molnet
 
 
-class AutoMS:
+class AutoMSData:
     def __init__(self, ion_mode = 'positive'):
-        """
-        Arguments:
-            data_path: string
-                path to the dataset locally
-        """
         self.data_path = None
         self.ion_mode = ion_mode
         self.peaks = None
         self.feature_table = None
-        self.feature_table_annotated = None
-        self.biomarker_table = None
         
-    
+        
     def load_files(self, data_path):
         self.data_path = data_path
         self.files = os.listdir(self.data_path)
     
-    
-    def find_features(self, min_intensity, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000, keep_pics=False):
-        """
-        Arguments:
-            min_snr: float
-                minimum signal noise ratio
-            mass_inv: float
-                minimum interval of the m/z values
-            rt_inv: float
-                minimum interval of the retention time
-            min_intensity: string
-                minimum intensity of a peak.
-        """
+        
+    def find_features(self, min_intensity, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000):
         output = {}
         files = self.files
         for i, f in enumerate(files):
@@ -65,13 +47,10 @@ class AutoMS:
                                     mass_inv = mass_inv, 
                                     rt_inv = rt_inv,
                                     max_items = max_items)
-            if keep_pics:
-                output[f] = {'peaks': peaks, 'pics': pics}
-            else:
-                output[f] = {'peaks': peaks, 'pics': None}
+            output[f] = {'peaks': peaks, 'pics': pics}
         self.peaks = output
         
-    
+
     def evaluate_features(self):
         if self.peaks is None:
             raise ValueError('Please find peak first')
@@ -80,15 +59,8 @@ class AutoMS:
             pic = vals['pics']
             score = peakeval.evaluate_peaks(peak, pic)
             self.peaks[f]['peaks']['score'] = score
-            
-            
-    def load_msdial(self, msdial_path):
-        data_path = self.data_path
-        self.peaks = {f: {} for f in os.listdir(data_path)}
-        self.feature_table = msdial.load_msdial_result(data_path, msdial_path)
-        self.feature_table['Ionmode'] = self.ion_mode
-    
-    
+
+
     def match_features(self, method = 'simple', mz_tol = 0.01, rt_tol = 20, min_frac = 0.5):
         if self.peaks is None:
             raise ValueError('Please find peak first')
@@ -99,31 +71,24 @@ class AutoMS:
             raise IOError('Invalid Method')
         self.feature_table = linker.feature_filter(min_frac = min_frac)
         self.feature_table['Ionmode'] = self.ion_mode
-    
-    
-    def preprocessing(self, impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, min_frac = 0.5, qc_samples = None, group_info = None, **args):
-        if self.feature_table is None:
-            raise ValueError('Please match peak first')
-        files = list(self.peaks.keys())
-        intensities = self.feature_table[files]
-        count_nan = np.sum(~np.isnan(intensities), axis = 1)
-        wh = np.where(count_nan / intensities.shape[1] >= min_frac)[0]
-        self.feature_table = self.feature_table.loc[wh,:]
-        self.feature_table = self.feature_table.reset_index(drop = True) 
-        x = self.feature_table.loc[:,files]
-        preprocessor = analysis.Preprocessing(x)
-        x_prep = preprocessor.one_step(impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, min_frac = 0.5, qc_samples = qc_samples, group_info = group_info, **args)
-        self.feature_table.loc[:,files] = x_prep
-    
+        
     
     def match_features_with_ms2(self, mz_tol = 0.01, rt_tol = 15):
         files = [os.path.join(self.data_path, f) for f in list(self.peaks.keys())]
         spectrums = tandem.load_tandem_ms(files)
         spectrums = tandem.cluster_tandem_ms(spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
         self.feature_table = tandem.feature_spectrum_matching(self.feature_table, spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
-
-
-    def match_features_with_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
+    
+    
+    def search_library(self, lib_path, method = 'entropy', ms1_da = 0.01, ms2_da = 0.05, threshold = 0.5):
+        feature_table = self.feature_table
+        value_columns = list(self.peaks.keys())
+        lib = library.SpecLib(lib_path)
+        lib.search(feature_table = feature_table, method = method, ms1_da = ms1_da, ms2_da = ms2_da, threshold = threshold)
+        self.feature_table_annotated = lib.refine_annotated_table(value_columns = value_columns)
+        
+        
+    def load_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
         feature_table = self.feature_table
         annotation_table = pd.read_csv(annotation_file)
         annotation_table.loc[:,'MZ'] = annotation_table.loc[:,'MZ'].astype(float)
@@ -143,24 +108,49 @@ class AutoMS:
             feature_table.loc[i, 'SMILES'] = annotation_table.loc[k,'SMILES']
             feature_table.loc[i, 'Matching Score'] = 'external annotation'
         self.feature_table = feature_table
-
-
-    def search_library(self, lib_path, method = 'entropy', ms1_da = 0.01, ms2_da = 0.05, threshold = 0.5):
-        feature_table = self.feature_table
-        value_columns = list(self.peaks.keys())
-        lib = library.SpecLib(lib_path)
-        lib.search(feature_table = feature_table, method = method, ms1_da = ms1_da, ms2_da = ms2_da, threshold = threshold)
-        self.feature_table_annotated = lib.refine_annotated_table(value_columns = value_columns)
         
 
-    def export_ms2_mgf(self, save_path):
+    def export_ms2_to_mgf(self, save_path):
         deepmass.export_to_mgf(self.feature_table, save_path)
     
     
-    def load_deepmass(self, deepmass_dir):
+    def load_deepmass_annotation(self, deepmass_dir):
         value_columns = list(self.peaks.keys())
         self.feature_table = deepmass.link_to_deepmass(self.feature_table, deepmass_dir)
         self.feature_table_annotated = deepmass.refine_annotated_table(self.feature_table, value_columns)
+        
+    def save_project(self, save_path):
+        with open(save_path, 'wb') as f:
+            pickle.dump(self.__dict__, f)
+    
+    
+    def load_project(self, save_path):
+        with open(save_path, 'rb') as f:
+            obj_dict = pickle.load(f)
+        self.__dict__.update(obj_dict)
+        
+
+    def export_features(self):
+        return AutoMSFeature(self.feature_table)
+
+
+
+
+class AutoMSFeature:
+    def __init__(self, feature_table = None):
+        self.feature_table = feature_table
+        self.feature_table_annotated = None
+        self.biomarker_table = None
+
+
+    def load_msdial(self, msdial_path):
+        data_path = self.data_path
+        self.peaks = {f: {} for f in os.listdir(data_path)}
+        self.feature_table = msdial.load_msdial_result(data_path, msdial_path)
+        
+    
+    def append_feature_table(self, feature_object):
+        pass
     
     
     def perform_dimensional_reduction(self, group_info = None, method = 'PCA', annotated_only = True, **args):
@@ -377,8 +367,10 @@ class AutoMS:
 
         
     def perform_molecular_network(self, threshold = 0.5, target_compound = None, group_info = None):
-        feature_table_annotated = self.feature_table_annotated
-        net = molnet.MolNet(feature_table_annotated, group_info)
+        feature_table = self.feature_table_annotated
+        if feature_table is None:
+            raise ValueError('the selected table is None')
+        net = molnet.MolNet(feature_table, group_info)
         net.compute_similarity_matrix()
         net.create_network(threshold = threshold)
         net.plot_global_network()
@@ -387,18 +379,8 @@ class AutoMS:
             net.plot_selected_subgraph()
     
     
-    def perform_spectral_network(self, target_compound = None):
-        pass
-    
-    
     def perform_enrichment_analysis(self):
         pass
-    
-    
-    '''
-    def perform_biomarker_analysis(self):
-        pass
-    '''
     
     
     def save_project(self, save_path):
@@ -413,38 +395,6 @@ class AutoMS:
 
 
 
-
 if __name__ == '__main__':
     
-    automs = AutoMS()
-    automs.load_files("E:/Data/Guanghuoxiang/Convert_files_mzML/POS")
-    automs.find_features(min_intensity = 20000, max_items = 100000)
-    automs.evaluate_features()
-    automs.match_features()
-
-    qc_samples = ['HF1_1578259_CP_QC1.mzML', 'HF1_1578259_CP_QC2.mzML', 'HF1_1578259_CP_QC3.mzML', 'HF1_1578259_CP_QC4.mzML', 'HF1_1578259_CP_QC5.mzML']
-    group_info = {'QC': ['HF1_1578259_CP_QC1.mzML', 'HF1_1578259_CP_QC2.mzML', 'HF1_1578259_CP_QC3.mzML', 'HF1_1578259_CP_QC4.mzML', 'HF1_1578259_CP_QC5.mzML'],
-                  'PX_L': ['HF1_CP1_FZTM230002472-1A.mzML','HF1_CP1_FZTM230002473-1A.mzML','HF1_CP1_FZTM230002474-1A.mzML',
-                           'HF1_CP1_FZTM230002475-1A.mzML', 'HF1_CP1_FZTM230002476-1A.mzML', 'HF1_CP1_FZTM230002477-1A.mzML'],
-                  'PX_S': ['HF1_CP2_FZTM230002478-1A.mzML', 'HF1_CP2_FZTM230002479-1A.mzML', 'HF1_CP2_FZTM230002480-1A.mzML',
-                          'HF1_CP2_FZTM230002481-1A.mzML','HF1_CP2_FZTM230002482-1A.mzML','HF1_CP2_FZTM230002483-1A.mzML'],
-                  'ZX_L': ['HF1_CP3_FZTM230002484-1A.mzML', 'HF1_CP3_FZTM230002485-1A.mzML', 'HF1_CP3_FZTM230002486-1A.mzML',
-                          'HF1_CP3_FZTM230002487-1A.mzML', 'HF1_CP3_FZTM230002488-1A.mzML', 'HF1_CP3_FZTM230002489-1A.mzML'],
-                  'ZX_S': ['HF1_CP4_FZTM230002490-1A.mzML', 'HF1_CP4_FZTM230002491-1A.mzML', 'HF1_CP4_FZTM230002492-1A.mzML',
-                          'HF1_CP4_FZTM230002493-1A.mzML', 'HF1_CP4_FZTM230002494-1A.mzML', 'HF1_CP4_FZTM230002495-1A.mzML'],
-                  'NX_L': ['HF1_CP5_FZTM230002496-1A.mzML', 'HF1_CP5_FZTM230002497-1A.mzML', 'HF1_CP5_FZTM230002498-1A.mzML',
-                           'HF1_CP5_FZTM230002499-1A.mzML', 'HF1_CP5_FZTM230002500-1A.mzML', 'HF1_CP5_FZTM230002501-1A.mzML'],
-                  'NX_S': ['HF1_CP6_FZTM230002502-1A.mzML', 'HF1_CP6_FZTM230002503-1A.mzML', 'HF1_CP6_FZTM230002504-1A.mzML',
-                           'HF1_CP6_FZTM230002505-1A.mzML', 'HF1_CP6_FZTM230002506-1A.mzML', 'HF1_CP6_FZTM230002507-1A.mzML']
-                  }
-    
-    # automs.match_features_with_external_annotation("E:/Data/Guanghuoxiang/meta_intensity_pos_classfire.csv")
-    automs.match_features_with_ms2()
-    automs.search_library("Library/references_spectrums_positive.pickle")
-    automs.save_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
-    
-    
-    data_path = "E:/Data/Guanghuoxiang/Convert_files_mzML/POS"
-    automs = AutoMS(data_path)
-    automs.load_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang.project")
-    
+    pass
