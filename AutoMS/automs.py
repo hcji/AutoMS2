@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from tqdm import tqdm
 
 from AutoMS import hpic
 from AutoMS import msdial
@@ -71,7 +72,14 @@ class AutoMSData:
             raise IOError('Invalid Method')
         self.feature_table = linker.feature_filter(min_frac = min_frac)
         self.feature_table['Ionmode'] = self.ion_mode
-        
+
+
+    def load_features_msdial(self, msdial_path):
+        data_path = self.data_path
+        self.peaks = {f: {} for f in os.listdir(data_path)}
+        self.feature_table = msdial.load_msdial_result(data_path, msdial_path)
+        self.feature_table['Ionmode'] = self.ion_mode
+
     
     def match_features_with_ms2(self, mz_tol = 0.01, rt_tol = 15):
         files = [os.path.join(self.data_path, f) for f in list(self.peaks.keys())]
@@ -84,9 +92,28 @@ class AutoMSData:
         feature_table = self.feature_table
         value_columns = list(self.peaks.keys())
         lib = library.SpecLib(lib_path)
-        lib.search(feature_table = feature_table, method = method, ms1_da = ms1_da, ms2_da = ms2_da, threshold = threshold)
-        self.feature_table_annotated = lib.refine_annotated_table(value_columns = value_columns)
-        
+        self.feature_table_annotated = lib.search(feature_table = feature_table, method = method, ms1_da = ms1_da, ms2_da = ms2_da, threshold = threshold)
+        self.feature_table_annotated = self.refine_annotated_table(value_columns = value_columns)
+
+
+    def refine_annotated_table(self, value_columns):
+        feature_table = self.feature_table
+        print('refine feature table with annotation')
+        keep = []
+        uni_comp = list(set(feature_table['Annotated Name']))
+        for comp in tqdm(uni_comp):
+            if comp is None:
+                continue
+            wh = np.where(feature_table['Annotated Name'] == comp)[0]
+            if len(wh) == 1:
+                keep.append(wh[0])
+            else:
+                mean_vals = np.mean(feature_table.loc[wh, value_columns].values, axis = 1)
+                keep.append(wh[np.argmax(mean_vals)])
+        keep = np.sort(keep)
+        feature_table_annotated = feature_table.loc[keep,:]
+        return feature_table_annotated
+
         
     def load_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
         feature_table = self.feature_table
@@ -117,7 +144,7 @@ class AutoMSData:
     def load_deepmass_annotation(self, deepmass_dir):
         value_columns = list(self.peaks.keys())
         self.feature_table = deepmass.link_to_deepmass(self.feature_table, deepmass_dir)
-        self.feature_table_annotated = deepmass.refine_annotated_table(self.feature_table, value_columns)
+        self.feature_table_annotated = self.refine_annotated_table(self.feature_table, value_columns)
         
     def save_project(self, save_path):
         with open(save_path, 'wb') as f:
@@ -131,27 +158,80 @@ class AutoMSData:
         
 
     def export_features(self):
-        return AutoMSFeature(self.feature_table)
+        return AutoMSFeature(self.feature_table, self.files)
 
 
 
 
 class AutoMSFeature:
-    def __init__(self, feature_table = None):
+    def __init__(self, feature_table = None, sample_list = None):
         self.feature_table = feature_table
+        self.files = sample_list
         self.feature_table_annotated = None
         self.biomarker_table = None
-
-
-    def load_msdial(self, msdial_path):
-        data_path = self.data_path
-        self.peaks = {f: {} for f in os.listdir(data_path)}
-        self.feature_table = msdial.load_msdial_result(data_path, msdial_path)
         
     
-    def append_feature_table(self, feature_object):
-        pass
+    def update_sample_name(self, namelist):
+        if len(namelist) != len(self.files):
+            raise IOError('the length of input name list is not equal to the length of original name list')
+        colnames = list(self.feature_table)
+        i = colnames.index(self.files[0])
+        j = colnames.index(self.files[-1]) + 1
+        colnames[i:j] = namelist
+        self.feature_table.columns = colnames
+        self.files = namelist
+        print('after update sample name, please re-do <refine_annotated_table> and <select_biomarker> to update related tables')
     
+    
+    def append_feature_table(self, feature_object):
+        if type(feature_object) != AutoMSFeature:
+            raise IOError('input is not a AutoMSFeature object')
+        if self.feature_table is None:
+            self.files = feature_object.files
+            self.feature_table = feature_object.feature_table
+        else:
+            if not (np.array(self.files) ==  np.array(feature_object.files)).all():
+                raise IOError('input feature object has different samples from the original')
+            self.feature_table = pd.concat([self.feature_table, feature_object.feature_table], ignore_index = True)
+        print('after append another feature table, please re-do <refine_annotated_table> and <select_biomarker> to update related tables')
+    
+
+    def preprocessing(self, impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, min_frac = 0.5, qc_samples = None, group_info = None, **args):
+        if self.feature_table is None:
+            raise ValueError('Please match peak first')
+        files = self.files
+        intensities = self.feature_table[files]
+        count_nan = np.sum(~np.isnan(intensities), axis = 1)
+        wh = np.where(count_nan / intensities.shape[1] >= min_frac)[0]
+        self.feature_table = self.feature_table.loc[wh,:]
+        self.feature_table = self.feature_table.reset_index(drop = True) 
+        x = self.feature_table.loc[:,files]
+        preprocessor = analysis.Preprocessing(x)
+        x_prep = preprocessor.one_step(impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, min_frac = 0.5, qc_samples = qc_samples, group_info = group_info, **args)
+        self.feature_table.loc[:,files] = x_prep
+
+    
+    def refine_annotated_table(self):
+        feature_table = self.feature_table
+        value_columns = self.files
+        print('refine feature table with annotation')
+        keep = []
+        try:
+            uni_comp = list(set(feature_table['Annotated Name']))
+        except:
+            raise ValueError('There is no annotation information')
+        for comp in tqdm(uni_comp):
+            if comp is None:
+                continue
+            wh = np.where(feature_table['Annotated Name'] == comp)[0]
+            if len(wh) == 1:
+                keep.append(wh[0])
+            else:
+                mean_vals = np.mean(feature_table.loc[wh, value_columns].values, axis = 1)
+                keep.append(wh[np.argmax(mean_vals)])
+        keep = np.sort(keep)
+        self.feature_table_annotated = feature_table.loc[keep,:]
+
     
     def perform_dimensional_reduction(self, group_info = None, method = 'PCA', annotated_only = True, **args):
         if annotated_only:
@@ -161,7 +241,7 @@ class AutoMSFeature:
         if feature_table is None:
             raise ValueError('Please match peak or load deepmass result, first')
             
-        files = list(self.peaks.keys())
+        files = self.files
         if group_info is not None:
             files_keep = [value for key in group_info for value in group_info[key]]
             x = feature_table.loc[:,files_keep].T
@@ -338,13 +418,15 @@ class AutoMSFeature:
         
     
     def perform_heatmap(self, biomarker_only = True, group_info = None, hide_xticks = False, hide_ytick = False):
+        # to do: 
+            # highlight biomarker
         if biomarker_only:
             biomarker_table = self.biomarker_table
         else:
             biomarker_table = self.feature_table_annotated
         if len(biomarker_table) >= 200:
             raise IOError('Too many features selected')
-        files = list(self.peaks.keys())
+        files = self.files
         if group_info is not None:
             files_keep = [value for key in group_info for value in group_info[key]]
             x = biomarker_table.loc[:,files_keep]

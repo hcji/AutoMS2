@@ -65,25 +65,7 @@ class SpecLib:
                 else:
                     feature_table.loc[i, 'Class'] = lib[k].get('class')
         self.feature_table = feature_table
-    
-    
-    def refine_annotated_table(self, value_columns):
-        feature_table = self.feature_table
-        print('refine feature table with annotation')
-        keep = []
-        uni_comp = list(set(feature_table['Annotated Name']))
-        for comp in tqdm(uni_comp):
-            if comp is None:
-                continue
-            wh = np.where(feature_table['Annotated Name'] == comp)[0]
-            if len(wh) == 1:
-                keep.append(wh[0])
-            else:
-                mean_vals = np.mean(feature_table.loc[wh, value_columns].values, axis = 1)
-                keep.append(wh[np.argmax(mean_vals)])
-        keep = np.sort(keep)
-        feature_table_annotated = feature_table.loc[keep,:]
-        return feature_table_annotated
+        return self.feature_table
     
     
     def predict_class(self, smi, timeout = 60):

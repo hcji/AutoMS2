@@ -89,22 +89,3 @@ def link_to_deepmass(feature_table, deepmass_dir):
         else:
             continue
     return feature_table
-
-
-def refine_annotated_table(feature_table, value_columns):
-    print('refine feature table with deepmass annotation')
-    keep = []
-    uni_comp = list(set(feature_table['InChIKey']))
-    for key in tqdm(uni_comp):
-        if key is None:
-            continue
-        wh = np.where(feature_table['InChIKey'] == key)[0]
-        if len(wh) == 1:
-            keep.append(wh[0])
-        else:
-            mean_vals = np.mean(feature_table.loc[wh, value_columns].values, axis = 1)
-            keep.append(wh[np.argmax(mean_vals)])
-    keep = np.sort(keep)
-    feature_table_annotated = feature_table.loc[keep,:]
-    return feature_table_annotated
-
