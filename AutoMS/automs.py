@@ -27,6 +27,12 @@ from AutoMS import enrichment
 
 class AutoMSData:
     def __init__(self, ion_mode = 'positive'):
+        """
+        Initialize AutoMSData object.
+        
+        Parameters:
+        - ion_mode (str): The ionization mode. Default is 'positive'.
+        """
         self.data_path = None
         self.ion_mode = ion_mode
         self.peaks = None
@@ -34,11 +40,27 @@ class AutoMSData:
         
         
     def load_files(self, data_path):
+        """
+        Load data files from the specified directory path.
+        
+        Parameters:
+        - data_path (str): The path to the directory containing the data files.
+        """
         self.data_path = data_path
         self.files = os.listdir(self.data_path)
     
         
     def find_features(self, min_intensity, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000):
+        """
+        Find features in the loaded data files using HPIC algorithm.
+        
+        Parameters:
+        - min_intensity (int): The minimum intensity threshold for peak detection.
+        - mass_inv (int): The inverse of mass tolerance for clustering ions of the same metabolite. Default is 1.
+        - rt_inv (int): The inverse of retention time tolerance for clustering ions of the same metabolite. Default is 30.
+        - min_snr (int): The minimum signal-to-noise ratio threshold for peak detection. Default is 3.
+        - max_items (int): The maximum number of ion traces to process. Default is 50000.
+        """
         output = {}
         files = self.files
         for i, f in enumerate(files):
@@ -54,6 +76,12 @@ class AutoMSData:
         
 
     def evaluate_features(self):
+        """
+        Evaluate the extracted features using peak evaluation.
+
+        Raises:
+        - ValueError: If no peaks are found. Please find peaks first before evaluating.
+        """
         if self.peaks is None:
             raise ValueError('Please find peak first')
         for f, vals in self.peaks.items():
@@ -64,6 +92,19 @@ class AutoMSData:
 
 
     def match_features(self, method = 'simple', mz_tol = 0.01, rt_tol = 20, min_frac = 0.5):
+        """
+        Match and filter extracted features using feature matching.
+
+        Parameters:
+        - method (str): The feature matching method to use. Default is 'simple'.
+        - mz_tol (float): The mass-to-charge ratio tolerance for feature matching. Default is 0.01.
+        - rt_tol (float): The retention time tolerance for feature matching. Default is 20.
+        - min_frac (float): The minimum fraction of samples that should have a feature for it to be considered. Default is 0.5.
+
+        Raises:
+        - ValueError: If no peaks are found. Please find peaks first before matching.
+        - IOError: If an invalid method is provided.
+        """
         if self.peaks is None:
             raise ValueError('Please find peak first')
         linker = matching.FeatureMatching(self.peaks)
@@ -76,6 +117,12 @@ class AutoMSData:
 
 
     def load_features_msdial(self, msdial_path):
+        """
+        Load feature extraction results from MS-DIAL into AutoMS.
+
+        Parameters:
+        - msdial_path (str): The path to the MS-DIAL feature extraction result file.
+        """
         data_path = self.data_path
         self.peaks = {f: {} for f in os.listdir(data_path)}
         self.feature_table = msdial.load_msdial_result(data_path, msdial_path)

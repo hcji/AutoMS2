@@ -1,0 +1,17 @@
+site_name: AutoMS
+theme:
+  name: materia
+
+nav:
+    - Home: index.md
+    - Installation: install.md
+    - Getting started: getting_started.md
+    - Document: 
+        Prepare MS Files: ms_convert.md
+        Feature Extraction: feature_extraction.md
+        Feature Annotation: feature_annotation.md
+        Statistical Analysis: statistics.md
+        Network Analysis: network_analysis.md
+        Enhancement Analysis: enhancement_analysis.md
+    - API guide: API_guide.md
+    - About: about.md
