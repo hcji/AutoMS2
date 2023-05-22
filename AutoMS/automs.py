@@ -130,6 +130,13 @@ class AutoMSData:
 
     
     def match_features_with_ms2(self, mz_tol = 0.01, rt_tol = 15):
+        """
+        Match features with corresponding MS/MS spectra.
+
+        Parameters:
+            - mz_tol (float): The m/z tolerance for matching features with spectra. Default is 0.01.
+            - rt_tol (float): The retention time tolerance for matching features with spectra. Default is 15.
+        """
         files = [os.path.join(self.data_path, f) for f in list(self.peaks.keys())]
         spectrums = tandem.load_tandem_ms(files)
         spectrums = tandem.cluster_tandem_ms(spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
@@ -137,6 +144,16 @@ class AutoMSData:
     
     
     def search_library(self, lib_path, method = 'entropy', ms1_da = 0.01, ms2_da = 0.05, threshold = 0.5):
+        """
+        Search a library for metabolite annotation based on the feature table.
+    
+        Parameters:
+            - lib_path (str): The path to the library file.
+            - method (str): The method for library search. Default is 'entropy'.
+            - ms1_da (float): The m/z tolerance for matching MS1 masses. Default is 0.01.
+            - ms2_da (float): The m/z tolerance for matching MS2 masses. Default is 0.05.
+            - threshold (float): The annotation confidence threshold. Default is 0.5.
+        """
         feature_table = self.feature_table
         value_columns = list(self.peaks.keys())
         lib = library.SpecLib(lib_path)
@@ -145,6 +162,15 @@ class AutoMSData:
 
 
     def refine_annotated_table(self, value_columns):
+        """
+        Refine the annotated feature table by selecting representative entries for each annotated compound.
+    
+        Parameters:
+            - value_columns (list): The list of columns containing values to consider for selecting representative entries.
+            
+        Returns:
+            - feature_table_annotated (DataFrame): The refined feature table with representative entries for each compound.
+        """
         feature_table = self.feature_table
         print('refine feature table with annotation')
         keep = []

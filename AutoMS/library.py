@@ -18,6 +18,12 @@ from AutoMS.SpectralEntropy import similarity as calc_similarity
 
 class SpecLib:
     def __init__(self, library_path):
+        """
+        Initialize SpecLib object by loading the library from the given path.
+        
+        Parameters:
+        - library_path (str): The path to the library file.
+        """
         print('load database...')
         with open(library_path, 'rb') as file:
             self.lib = pickle.load(file)
@@ -27,6 +33,20 @@ class SpecLib:
     
     
     def search(self, feature_table, method = 'entropy', ms1_da=0.01, ms2_da=0.05, threshold = 0.5, synonyms = True):
+        """
+        Search the library for annotations matching the features in the feature_table.
+        
+        Parameters:
+        - feature_table (DataFrame): The feature table containing the features to be annotated.
+        - method (str): The similarity calculation method. Default is 'entropy'.
+        - ms1_da (float): The mass tolerance in Da for matching precursor m/z values. Default is 0.01.
+        - ms2_da (float): The mass tolerance in Da for matching MS/MS spectra. Default is 0.05.
+        - threshold (float): The similarity threshold for considering a match. Default is 0.5.
+        - synonyms (bool): Flag indicating whether to retrieve synonyms for the annotated compounds. Default is True.
+        
+        Returns:
+        - feature_table (DataFrame): The updated feature table with annotations from the library.
+        """
         lib = self.lib
         precursor_mzs = self.precursor_mzs
         adducts = self.adducts
@@ -69,6 +89,16 @@ class SpecLib:
     
     
     def predict_class(self, smi, timeout = 60):
+        """
+        Predict the class of a compound based on its SMILES representation using an external service.
+        
+        Parameters:
+        - smi (str): The SMILES representation of the compound.
+        - timeout (int): The timeout duration for the prediction request in seconds. Default is 60.
+        
+        Returns:
+        - class_prediction (str or None): The predicted class of the compound, or None if prediction fails.
+        """
         url = 'https://npclassifier.ucsd.edu/classify?smiles={}'.format(smi)
         try:
             response = requests.get(url, timeout=timeout)
@@ -82,6 +112,16 @@ class SpecLib:
             return None
     
     def get_synonyms(self, smi, timeout = 60):
+        """
+        Retrieve synonyms for a compound based on its SMILES representation using an external service.
+        
+        Parameters:
+        - smi (str): The SMILES representation of the compound.
+        - timeout (int): The timeout duration for the request in seconds. Default is 60.
+        
+        Returns:
+        - synonyms (str or None): The synonyms of the compound, or None if retrieval fails.
+        """
         url = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{}/Synonyms/json'.format(smi)
         try:
             response = requests.get(url, timeout=timeout)
