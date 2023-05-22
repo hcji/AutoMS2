@@ -2,6 +2,7 @@ from statsmodels.stats.multitest import multipletests
 from scipy.stats import hypergeom, fisher_exact
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import os
 from itertools import chain
 
@@ -127,3 +128,16 @@ class EnrichmentAnalysis:
         results.sort_values("p", inplace=True)
 
         self.results = results
+
+
+def plot_enrichment_analysis_results(results: pd.DataFrame, adj_method:str):
+    fold_enrichment = np.abs(np.log(results["Holm p"]))
+    plt.figure(dpi = 300)
+    plt.title("Metabolite Sets Enrichment Overview")
+    plt.barh(results["Pathway Name"], fold_enrichment, height=0.5)
+    plt.xlabel("Fold Enrichment")
+    plt.yticks(fontsize=6)
+    plt.tight_layout()
+    plt.show()
+
+

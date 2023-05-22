@@ -22,6 +22,7 @@ from AutoMS import tandem
 from AutoMS import deepmass
 from AutoMS import analysis
 from AutoMS import molnet
+from AutoMS import enrichment
 
 
 class AutoMSData:
@@ -436,16 +437,16 @@ class AutoMSFeature:
         x_ = np.log2(x.div(x_mean, axis=0))
         plt.figure(dpi = 300)
         if 'Annotated Name' in list(biomarker_table.columns):
-            yticklabels = list(biomarker_table['Annotated Name'])
+            yticklabels = [s[:30] for s in list(biomarker_table['Annotated Name'])]
         else:
             yticklabels = True
         if hide_ytick:
             yticklabels = False
         if hide_xticks:
             xticklabels = False
-            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), xticklabels = xticklabels, yticklabels = yticklabels, vmin=-np.max(np.abs(x_)), vmax=np.max(np.abs(x_)))
+            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), xticklabels = xticklabels, yticklabels = yticklabels, vmin=-np.max(np.abs(x_.values)), vmax=np.max(np.abs(x_.values)))
         else:
-            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), yticklabels = yticklabels, vmin=-np.max(np.abs(x_)), vmax=np.max(np.abs(x_)))
+            sns.clustermap(x_, cmap="bwr", figsize = (8, len(x_) / 5), yticklabels = yticklabels, vmin=-np.max(np.abs(x_.values)), vmax=np.max(np.abs(x_.values)))
 
         
     def perform_molecular_network(self, threshold = 0.5, target_compound = None, group_info = None):
@@ -461,9 +462,14 @@ class AutoMSFeature:
             net.plot_selected_subgraph()
     
     
-    def perform_enrichment_analysis(self):
-        pass
-    
+    def perform_enrichment_analysis(self, organism="hsa", pvalue_cutoff = 0.05, adj_method = "fdr_bh"):
+        biomarker_table = self.biomarker_table
+        inchikey_list = biomarker_table['InChIKey']
+        enrichment_analysis = enrichment.EnrichmentAnalysis(inchikey_list, organism = organism)
+        enrichment_analysis.run_analysis(pvalue_cutoff=0.05)
+        results = enrichment_analysis.results
+        enrichment.plot_enrichment_analysis_results(results, adj_method = adj_method)
+        
     
     def save_project(self, save_path):
         with open(save_path, 'wb') as f:
