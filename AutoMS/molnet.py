@@ -21,7 +21,7 @@ from rdkit.Chem.Draw import rdMolDraw2D
 from PIL import Image
 
 from bokeh.io import show
-from bokeh.models import Plot, Range1d, MultiLine, Circle, HoverTool, TapTool, BoxSelectTool, ResetTool
+from bokeh.models import Plot, Range1d, MultiLine, Circle, HoverTool, TapTool, BoxSelectTool, ResetTool, ColumnDataSource
 from bokeh.models.graphs import from_networkx
 from bokeh.palettes import Spectral4
 from bokeh.plotting import figure
@@ -30,11 +30,12 @@ from sklearn.metrics import pairwise_distances
 
 
 class MolNet:
-    def __init__(self, feature_table_annotated, group_info):
-        self.smiles = feature_table_annotated['CanonicalSMILES'].values
+    def __init__(self, feature_table_annotated, biomarker_table, group_info):
+        self.smiles = feature_table_annotated['SMILES'].values
         self.names = feature_table_annotated['Annotated Name'].values
         self.group_info = group_info
         self.feature_table_annotated = feature_table_annotated
+        self.biomarker_table = None
         self.matrix = None
         self.G1 = None
         self.G2 = None
@@ -78,6 +79,15 @@ class MolNet:
             index.append(node[0])
         index = np.array(index)
         
+        if self.biomarker_table is not None:
+            highlight_names = self.biomarker_table['Annotated Name'].values
+            highlight_index = [i for i in index if names[i] in highlight_names]
+        else:
+            highlight_index = []
+        node_indices = list(G1.nodes)
+        node_colors = ["darkred" if node in highlight_index else "lightblue" for node in G1.nodes()]
+        node_source = ColumnDataSource(data=dict(index=node_indices, fill_color=node_colors))
+        
         name = {i: names[i] for i in index}
         smiles = {i: smiles[i] for i in index}
         
@@ -85,7 +95,8 @@ class MolNet:
         plot.add_tools(HoverTool(tooltips=[("index", "@index"), ("name", "@name"), ("smiles", "@smiles")]), TapTool(), BoxSelectTool(), ResetTool())
 
         graph_renderer = from_networkx(G1, nx.spring_layout, scale=1, center=(0,0))
-        graph_renderer.node_renderer.glyph = Circle(size=10, fill_color=Spectral4[0])
+        graph_renderer.node_renderer.data_source = node_source
+        graph_renderer.node_renderer.glyph = Circle(size=10, fill_color={'field': 'fill_color'})
         graph_renderer.edge_renderer.glyph = MultiLine(line_alpha=0.8, line_width=1)
 
         graph_renderer.node_renderer.data_source.data['index'] = list(name.keys())

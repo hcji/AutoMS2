@@ -663,8 +663,6 @@ class AutoMSFeature:
         Raises:
         - IOError: If the number of features is too large for heatmap visualization.
         """
-        # to do: 
-            # highlight biomarker
         if biomarker_only:
             biomarker_table = self.biomarker_table
         else:
@@ -705,10 +703,13 @@ class AutoMSFeature:
         Raises:
         - ValueError: If the annotated feature table is not available.
         """
+        # to do: 
+            # highlight biomarker
         feature_table = self.feature_table_annotated
+        biomarker_table = self.biomarker_table
         if feature_table is None:
             raise ValueError('the selected table is None')
-        net = molnet.MolNet(feature_table, group_info)
+        net = molnet.MolNet(feature_table, biomarker_table, group_info)
         net.compute_similarity_matrix()
         net.create_network(threshold = threshold)
         net.plot_global_network()
