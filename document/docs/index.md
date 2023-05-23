@@ -48,7 +48,6 @@ underlying mechanisms driving metabolic changes.
 ## Documentation
 
 - [Feature Extraction]()
-- [Feature Grouping]()
 - [Feature Annotation]()
 - [Statistical Analysis]()
 - [Network Analysis]()

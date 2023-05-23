@@ -102,19 +102,55 @@ automs_msdial_feat.refine_annotated_table()
 
 
 # dimensional reduction analysis
-automs_hpic_feat.perform_dimensional_reduction(group_info = group_info, method = 'PCA')
-automs_hpic_feat.perform_dimensional_reduction(group_info = group_info, method = 'tSNE')
-automs_hpic_feat.perform_dimensional_reduction(group_info = group_info, method = 'uMAP')
+automs_hpic_feat.perform_dimensional_reduction(group_info = group_info, method = 'PCA', annotated_only = False)
+automs_hpic_feat.perform_dimensional_reduction(group_info = group_info, method = 'tSNE', annotated_only = False)
+automs_hpic_feat.perform_dimensional_reduction(group_info = group_info, method = 'uMAP', annotated_only = False)
 
-automs_msdial_feat.perform_dimensional_reduction(group_info = group_info, method = 'PCA')
-automs_msdial_feat.perform_dimensional_reduction(group_info = group_info, method = 'tSNE')
-automs_msdial_feat.perform_dimensional_reduction(group_info = group_info, method = 'uMAP')
+automs_msdial_feat.perform_dimensional_reduction(group_info = group_info, method = 'PCA', annotated_only = False)
+automs_msdial_feat.perform_dimensional_reduction(group_info = group_info, method = 'tSNE', annotated_only = False)
+automs_msdial_feat.perform_dimensional_reduction(group_info = group_info, method = 'uMAP', annotated_only = False)
 
 
 # analyze leaf samples
 group_info = {'PX_L': ['PX-L-{}'.format(i) for i in range(1,7)],
-              'ZX_L': ['ZX-L-{}'.format(i) for i in range(1,7)],
-              'NX_L': ['NX-L-{}'.format(i) for i in range(1,7)]
+              'ZX_L': ['ZX-L-{}'.format(i) for i in range(1,7)]+ ['NX-L-{}'.format(i) for i in range(1,7)]
               }
 automs_hpic_feat.perform_PLSDA(group_info = group_info, n_components = 3)
 automs_msdial_feat.perform_PLSDA(group_info = group_info, n_components = 3)
+
+automs_hpic_feat.perform_GradientBoost(group_info = group_info, n_estimators = 500)
+automs_msdial_feat.perform_GradientBoost(group_info = group_info, n_estimators = 500)
+
+automs_hpic_feat.perform_RandomForest(group_info = group_info)
+automs_msdial_feat.perform_RandomForest(group_info = group_info)
+
+pls_vips = automs_hpic_feat.feature_table_annotated['PLS_VIP'].values
+pls_vip_thres = -np.sort(-pls_vips)[30]
+rf_vips = automs_hpic_feat.feature_table_annotated['RF_VIP'].values
+rf_vip_thres = -np.sort(-rf_vips)[30]
+automs_hpic_feat.select_biomarker(criterion = {'PLS_VIP': ['>', pls_vips], 'RF_VIP': ['>', rf_vip_thres]}, combination = 'union')
+automs_hpic_feat.perform_heatmap(group_info = group_info, hide_xticks = False, hide_ytick = False)
+
+
+
+group_info = {'PX_S': ['PX-S-{}'.format(i) for i in range(1,7)],
+              'ZX_S': ['ZX-S-{}'.format(i) for i in range(1,7)],
+              'NX_S': ['NX-S-{}'.format(i) for i in range(1,7)]
+              }
+automs_hpic_feat.perform_PLSDA(group_info = group_info, n_components = 3)
+automs_msdial_feat.perform_PLSDA(group_info = group_info, n_components = 3)
+
+automs_hpic_feat.perform_GradientBoost(group_info = group_info)
+automs_msdial_feat.perform_GradientBoost(group_info = group_info)
+
+automs_hpic_feat.perform_RandomForest(group_info = group_info, n_estimators = 500)
+automs_msdial_feat.perform_RandomForest(group_info = group_info, n_estimators = 500)
+
+pls_vips = automs_hpic_feat.feature_table_annotated['PLS_VIP'].values
+pls_vip_thres = -np.sort(-pls_vips)[50]
+rf_vips = automs_hpic_feat.feature_table_annotated['RF_VIP'].values
+rf_vip_thres = -np.sort(-rf_vips)[50]
+automs_hpic_feat.select_biomarker(criterion = {'PLS_VIP': ['>', pls_vip_thres], 'RF_VIP': ['>', rf_vip_thres]}, combination = 'intersection')
+automs_hpic_feat.perform_heatmap(group_info = group_info, hide_xticks = False, hide_ytick = False)
+
+
