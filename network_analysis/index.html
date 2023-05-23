@@ -8,7 +8,7 @@
         
         
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>Prepare MS Files - AutoMS</title>
+        <title>Network Analysis - AutoMS</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/font-awesome.min.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
@@ -47,7 +47,7 @@
                                 <ul class="dropdown-menu">
                                     
 <li>
-    <a href="./" class="dropdown-item active">Prepare MS Files</a>
+    <a href="../ms_convert/" class="dropdown-item">Prepare MS Files</a>
 </li>
                                     
 <li>
@@ -63,7 +63,7 @@
 </li>
                                     
 <li>
-    <a href="../network_analysis/" class="dropdown-item">Network Analysis</a>
+    <a href="./" class="dropdown-item active">Network Analysis</a>
 </li>
                                     
 <li>
@@ -86,12 +86,12 @@
                             </a>
                         </li>
                             <li class="nav-item">
-                                <a rel="prev" href="../getting_started/" class="nav-link">
+                                <a rel="prev" href="../statistics/" class="nav-link">
                                     <i class="fa fa-arrow-left"></i> Previous
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a rel="next" href="../feature_extraction/" class="nav-link">
+                                <a rel="next" href="../enhancement_analysis/" class="nav-link">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
@@ -113,24 +113,8 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-level="1"><a href="#converting-ms-data-files-to-mzml" class="nav-link">Converting MS Data Files to mzML</a>
+            <li class="nav-item" data-level="1"><a href="#_1" class="nav-link"></a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-level="2"><a href="#step-1-install-proteowizard" class="nav-link">Step 1: Install ProteoWizard</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
-            <li class="nav-item" data-level="2"><a href="#step-2-open-a-command-prompt-or-terminal" class="nav-link">Step 2: Open a Command Prompt or Terminal</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
-            <li class="nav-item" data-level="2"><a href="#step-3-convert-ms-data-to-mzml" class="nav-link">Step 3: Convert MS Data to mzML</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
-            <li class="nav-item" data-level="2"><a href="#step-4-additional-conversion-options" class="nav-link">Step 4: Additional Conversion Options</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
               </ul>
             </li>
         </ul>
@@ -138,36 +122,7 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h1 id="converting-ms-data-files-to-mzml">Converting MS Data Files to mzML</h1>
-<p>Mass spectrometry (MS) data files acquired from different vendors often come in proprietary formats 
-that are not compatible with standard analysis tools. AutoMS support the mzML format only, 
-one widely used approach is to convert the vendor-specific data files into the mzML format, 
-which is a standardized file format for MS data.
-To convert MS data files into mzML using msconvert, follow the steps outlined below:</p>
-<h2 id="step-1-install-proteowizard">Step 1: Install ProteoWizard</h2>
-<p>Before using msconvert, you need to install the ProteoWizard software suite. Follow these instructions to install it: </p>
-<ul>
-<li>Visit the ProteoWizard website: <a href="http://proteowizard.sourceforge.net/">ProteoWizard Website</a>.  </li>
-<li>Download the appropriate installer for your operating system.  </li>
-<li>Run the installer and follow the on-screen instructions to complete the installation.</li>
-</ul>
-<h2 id="step-2-open-a-command-prompt-or-terminal">Step 2: Open a Command Prompt or Terminal</h2>
-<p>Once ProteoWizard is installed, open a command prompt (Windows) or terminal (macOS/Linux) to access the msconvert tool.</p>
-<h2 id="step-3-convert-ms-data-to-mzml">Step 3: Convert MS Data to mzML</h2>
-<p>To convert the MS data file to mzML, use the following command:</p>
-<pre><code>    msconvert &lt;input_file&gt; -o &lt;output_directory&gt; --mzML
-</code></pre>
-<p>Replace <em>input_file</em> with the path to the vendor-specific MS data file that you want to convert. Specify the <em>output_directory</em> where you want to save the converted mzML file.</p>
-<p>For example, to convert a Thermo RAW file named sample.raw to mzML and save it in the current directory, use the command:</p>
-<pre><code>    msconvert sample.raw -o . --mzML
-</code></pre>
-<h2 id="step-4-additional-conversion-options">Step 4: Additional Conversion Options</h2>
-<p>msconvert provides additional options to customize the conversion process. Some common options include:</p>
-<p>--filter: Apply data filtering during conversion.<br />
---mz5: Convert the data to the mz5 format.<br />
---gzip: Compress the output mzML file using gzip.<br />
---32-bit: Convert the data to 32-bit floating-point format.  </p>
-<p>Refer to the msconvert documentation for a full list of available options and their usage.</p></div>
+<h1 id="_1"></h1></div>
             </div>
         </div>
 

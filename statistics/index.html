@@ -8,7 +8,7 @@
         
         
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>Prepare MS Files - AutoMS</title>
+        <title>Statistical Analysis - AutoMS</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/font-awesome.min.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
@@ -47,7 +47,7 @@
                                 <ul class="dropdown-menu">
                                     
 <li>
-    <a href="./" class="dropdown-item active">Prepare MS Files</a>
+    <a href="../ms_convert/" class="dropdown-item">Prepare MS Files</a>
 </li>
                                     
 <li>
@@ -59,7 +59,7 @@
 </li>
                                     
 <li>
-    <a href="../statistics/" class="dropdown-item">Statistical Analysis</a>
+    <a href="./" class="dropdown-item active">Statistical Analysis</a>
 </li>
                                     
 <li>
@@ -86,12 +86,12 @@
                             </a>
                         </li>
                             <li class="nav-item">
-                                <a rel="prev" href="../getting_started/" class="nav-link">
+                                <a rel="prev" href="../feature_annotation/" class="nav-link">
                                     <i class="fa fa-arrow-left"></i> Previous
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a rel="next" href="../feature_extraction/" class="nav-link">
+                                <a rel="next" href="../network_analysis/" class="nav-link">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
@@ -113,21 +113,17 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-level="1"><a href="#converting-ms-data-files-to-mzml" class="nav-link">Converting MS Data Files to mzML</a>
+            <li class="nav-item" data-level="1"><a href="#statistical-analysis" class="nav-link">Statistical Analysis</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-level="2"><a href="#step-1-install-proteowizard" class="nav-link">Step 1: Install ProteoWizard</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
-            <li class="nav-item" data-level="2"><a href="#step-2-open-a-command-prompt-or-terminal" class="nav-link">Step 2: Open a Command Prompt or Terminal</a>
+            <li class="nav-item" data-level="2"><a href="#data-combination" class="nav-link">Data Combination</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-level="2"><a href="#step-3-convert-ms-data-to-mzml" class="nav-link">Step 3: Convert MS Data to mzML</a>
+            <li class="nav-item" data-level="2"><a href="#preprocessing" class="nav-link">Preprocessing</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-level="2"><a href="#step-4-additional-conversion-options" class="nav-link">Step 4: Additional Conversion Options</a>
+            <li class="nav-item" data-level="2"><a href="#dimensional-reduction-analysis" class="nav-link">Dimensional Reduction Analysis</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -138,36 +134,98 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h1 id="converting-ms-data-files-to-mzml">Converting MS Data Files to mzML</h1>
-<p>Mass spectrometry (MS) data files acquired from different vendors often come in proprietary formats 
-that are not compatible with standard analysis tools. AutoMS support the mzML format only, 
-one widely used approach is to convert the vendor-specific data files into the mzML format, 
-which is a standardized file format for MS data.
-To convert MS data files into mzML using msconvert, follow the steps outlined below:</p>
-<h2 id="step-1-install-proteowizard">Step 1: Install ProteoWizard</h2>
-<p>Before using msconvert, you need to install the ProteoWizard software suite. Follow these instructions to install it: </p>
+<h1 id="statistical-analysis">Statistical Analysis</h1>
+<p>In metabolomics, the statistical analysis of features plays a crucial role in extracting meaningful 
+insights from complex datasets. It aims to understand the metabolic changes and patterns associated 
+with various physiological conditions, diseases, and environmental factors. AutoMS provides the key 
+aspects of statistical analysis in metabolomics. </p>
+<p>Statistical analysis in AutoMS is performed on <em>AutoMSFeature</em> class, which is obtained from <em>export_features</em> 
+of <em>AutoMSData</em> class.</p>
+<p>Here's an example code snippet:</p>
+<pre><code>automs_hpic_pos = automs.AutoMSData(ion_mode='positive')
+automs_hpic_pos.load_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang_hpic_positive.project")
+automs_hpic_pos = automs_hpic_pos.export_features()
+</code></pre>
+<p>Here, <em>automs_hpic_pos</em> is obtained and saved followed the <em>feature_extraction</em> steps.</p>
+<h2 id="data-combination">Data Combination</h2>
+<p>Data combination in metabolomics refers to the integration of metabolomics datasets obtained from 
+different ionization modes, such as positive and negative modes. Combining data from multiple 
+ionization modes can provide a more comprehensive view of the metabolome and improve the coverage 
+and reliability of metabolite identification.</p>
+<p>AutoMS achieves this by <em>append_feature_table</em> function, Here's an example code snippet:</p>
+<pre><code># Load and export features for positive ion mode
+automs_hpic_pos = automs.AutoMSData(ion_mode='positive')
+automs_hpic_pos.load_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang_hpic_positive.project")
+automs_hpic_pos = automs_hpic_pos.export_features()
+
+# Load and export features for negative ion mode
+automs_hpic_neg = automs.AutoMSData(ion_mode='negative')
+automs_hpic_neg.load_project("E:/Data/Guanghuoxiang/AutoMS_processing/guanghuoxiang_hpic_negative.project")
+automs_hpic_neg = automs_hpic_neg.export_features()
+
+# Merge positive and negative features
+automs_hpic_feat = automs.AutoMSFeature()
+automs_hpic_feat.append_feature_table(automs_hpic_pos)
+automs_hpic_feat.append_feature_table(automs_hpic_neg)
+</code></pre>
+<h2 id="preprocessing">Preprocessing</h2>
+<p>Preprocessing involves various steps to transform raw metabolomics data into a suitable format for analysis. 
+It aims to reduce noise, correct systematic biases, and normalize the data. The preprocessing steps include:</p>
 <ul>
-<li>Visit the ProteoWizard website: <a href="http://proteowizard.sourceforge.net/">ProteoWizard Website</a>.  </li>
-<li>Download the appropriate installer for your operating system.  </li>
-<li>Run the installer and follow the on-screen instructions to complete the installation.</li>
+<li>Data cleaning: Removing missing values and outliers.</li>
+<li>Imputation: Estimating missing values based on statistical methods.</li>
+<li>Data normalization: Scaling the data to account for differences in sample concentration or instrument response.</li>
+<li>Correlation Evaluation: Calculate correlations between QC samples, evaluating the experimental consistency.</li>
 </ul>
-<h2 id="step-2-open-a-command-prompt-or-terminal">Step 2: Open a Command Prompt or Terminal</h2>
-<p>Once ProteoWizard is installed, open a command prompt (Windows) or terminal (macOS/Linux) to access the msconvert tool.</p>
-<h2 id="step-3-convert-ms-data-to-mzml">Step 3: Convert MS Data to mzML</h2>
-<p>To convert the MS data file to mzML, use the following command:</p>
-<pre><code>    msconvert &lt;input_file&gt; -o &lt;output_directory&gt; --mzML
+<p>Here's an example code snippet:</p>
+<pre><code># Information of samples
+qc_samples = ['QC-{}'.format(i) for i in range(1,6)]
+group_info = {
+    'QC': ['QC-{}'.format(i) for i in range(1,6)],       # QC group
+    'PX_L': ['PX-L-{}'.format(i) for i in range(1,7)],   # Leaf of PX
+    'PX_S': ['PX-S-{}'.format(i) for i in range(1,7)],   # Stem of PX
+    'ZX_L': ['ZX-L-{}'.format(i) for i in range(1,7)],   # Leaf of ZX
+    'ZX_S': ['ZX-S-{}'.format(i) for i in range(1,7)],   # Stem of ZX
+    'NX_L': ['NX-L-{}'.format(i) for i in range(1,7)],   # Leaf of NX
+    'NX_S': ['NX-S-{}'.format(i) for i in range(1,7)]    # Stem of NX
+}
+
+# Preprocessing
+automs_hpic_feat.preprocessing(
+    impute_method='KNN',
+    outlier_threshold=3,
+    rsd_threshold=0.3,
+    min_frac=0.5,
+    qc_samples=qc_samples,
+    group_info=group_info
+)
+
+# Refine annotated table and remove repetitive annotations
+automs_hpic_feat.refine_annotated_table()
 </code></pre>
-<p>Replace <em>input_file</em> with the path to the vendor-specific MS data file that you want to convert. Specify the <em>output_directory</em> where you want to save the converted mzML file.</p>
-<p>For example, to convert a Thermo RAW file named sample.raw to mzML and save it in the current directory, use the command:</p>
-<pre><code>    msconvert sample.raw -o . --mzML
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li>preprocessing  <ul>
+<li>impute_method (str): The imputation method to use.</li>
+<li>outlier_threshold (float): The threshold for outlier removal.</li>
+<li>rsd_threshold (float): The threshold for relative standard deviation (RSD) filtering.</li>
+<li>min_frac (float): The minimum fraction of non-missing values required for a feature to be retained.</li>
+<li>qc_samples (list): The list of QC sample names.</li>
+<li>group_info (dict): The dictionary containing group information for sample grouping.</li>
+<li>args: Additional keyword arguments for the preprocessing method.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Supported similarity method</strong>:</p>
+<pre><code>'Low value': The missing values are imputed with a low value.
+'Mean': The mean imputation method replaces missing values with the mean value of the corresponding feature.
+'Median': Similar to mean imputation, the median imputation method replaces missing values with the median value of the corresponding feature.
+'KNN': K-nearest neighbors (KNN) imputation imputes missing values by considering the values of the k-nearest neighbors in the feature space.
+'Iterative RF': Iterative Random Forest (RF) imputation is an iterative imputation method. It builds a random forest model to predict the missing values based on other features.
+'Iterative BR': Iterative Bayesian Ridge (BR) imputation is another iterative imputation method. It uses a Bayesian Ridge regression model to estimate the missing values based on other features.
+'Iterative SVR': Iterative Support Vector Regression (SVR) imputation is an iterative method that uses support vector regression to predict missing values. It builds a regression model using non-missing values as the training data and predicts the missing values.
 </code></pre>
-<h2 id="step-4-additional-conversion-options">Step 4: Additional Conversion Options</h2>
-<p>msconvert provides additional options to customize the conversion process. Some common options include:</p>
-<p>--filter: Apply data filtering during conversion.<br />
---mz5: Convert the data to the mz5 format.<br />
---gzip: Compress the output mzML file using gzip.<br />
---32-bit: Convert the data to 32-bit floating-point format.  </p>
-<p>Refer to the msconvert documentation for a full list of available options and their usage.</p></div>
+<h2 id="dimensional-reduction-analysis">Dimensional Reduction Analysis</h2></div>
             </div>
         </div>
 
