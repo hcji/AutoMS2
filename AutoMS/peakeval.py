@@ -6,16 +6,14 @@ Created on Tue Mar 22 10:02:51 2022
 """
 
 
+import AutoMS
+import os
 import numpy as np
-import pandas as pd
 import tensorflow as tf
-import matplotlib.pyplot as plt
-import seaborn as sns
 from tqdm import tqdm
-from fitter import Fitter
 from scipy.stats import t
-from sklearn.preprocessing import MinMaxScaler
 
+model_path = os.path.join(AutoMS.__path__[0], 'model', 'denoising_autoencoder.pkl')
 
 def evaluate_peaks(peaks, pics, length=14, params=(8.5101, 1.6113, 0.1950), min_width = 6):
     traces = []
@@ -43,7 +41,7 @@ def evaluate_peaks(peaks, pics, length=14, params=(8.5101, 1.6113, 0.1950), min_
     exclude = np.array(exclude)
     
     X = traces
-    autoencoder = tf.keras.models.load_model('model/denoising_autoencoder.pkl')
+    autoencoder = tf.keras.models.load_model(model_path)
     X_rebuild = autoencoder.predict(X)
     X_rebuild = np.reshape(X_rebuild, [-1, 50])
     

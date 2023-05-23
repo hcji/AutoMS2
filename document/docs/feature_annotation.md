@@ -100,7 +100,7 @@ stored in the specified pickle file ("Library/references_spectrums_positive.pick
     "weighted_dot_product": Weighted dot product distance"
     
 
-## How to Build Library
+## How to Build a Library
 
 library should be stored in the specified pickle file, which is a list of matchms::Spectrum object.
 

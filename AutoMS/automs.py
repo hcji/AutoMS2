@@ -190,6 +190,14 @@ class AutoMSData:
 
         
     def load_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
+        """
+        Load external annotation information from a file and match it with the feature table.
+    
+        Parameters:
+        - annotation_file (str): The path to the annotation file.
+        - mz_tol (float): The m/z tolerance for matching annotations. Default is 0.01.
+        - rt_tol (float): The retention time tolerance for matching annotations. Default is 10.
+        """
         feature_table = self.feature_table
         annotation_table = pd.read_csv(annotation_file)
         annotation_table.loc[:,'MZ'] = annotation_table.loc[:,'MZ'].astype(float)
@@ -212,26 +220,56 @@ class AutoMSData:
         
 
     def export_ms2_to_mgf(self, save_path):
+        """
+        Export feature MS2 spectra to an MGF file.
+    
+        Parameters:
+        - save_path (str): The path to save the MGF file.
+        """
         deepmass.export_to_mgf(self.feature_table, save_path)
     
     
     def load_deepmass_annotation(self, deepmass_dir):
+        """
+        Load annotation information from DeepMass results and link it with the feature table.
+    
+        Parameters:
+        - deepmass_dir (str): The directory containing DeepMass results.
+        """
         value_columns = list(self.peaks.keys())
         self.feature_table = deepmass.link_to_deepmass(self.feature_table, deepmass_dir)
         self.feature_table_annotated = self.refine_annotated_table(self.feature_table, value_columns)
         
     def save_project(self, save_path):
+        """
+        Save the current project to a file.
+    
+        Parameters:
+        - save_path (str): The path to save the project file.
+        """
         with open(save_path, 'wb') as f:
             pickle.dump(self.__dict__, f)
     
     
     def load_project(self, save_path):
+        """
+        Load a project from a file.
+    
+        Parameters:
+        - save_path (str): The path to the saved project file.
+        """
         with open(save_path, 'rb') as f:
             obj_dict = pickle.load(f)
         self.__dict__.update(obj_dict)
         
 
     def export_features(self):
+        """
+        Export the feature table as an AutoMSFeature object.
+    
+        Returns:
+        - AutoMSFeature: The AutoMSFeature object representing the feature table.
+        """
         return AutoMSFeature(self.feature_table, self.files)
 
 
@@ -239,6 +277,13 @@ class AutoMSData:
 
 class AutoMSFeature:
     def __init__(self, feature_table = None, sample_list = None):
+        """
+        Initialize AutoMSFeature object.
+
+        Parameters:
+        - feature_table (DataFrame): The feature table containing the MS data.
+        - sample_list (list): The list of sample names corresponding to the columns in the feature table.
+        """
         self.feature_table = feature_table
         self.files = sample_list
         self.feature_table_annotated = None
@@ -246,6 +291,15 @@ class AutoMSFeature:
         
     
     def update_sample_name(self, namelist):
+        """
+        Update the sample names in the feature table.
+
+        Parameters:
+        - namelist (list): The new list of sample names.
+
+        Raises:
+        - IOError: If the length of the input name list is not equal to the length of the original name list.
+        """
         if len(namelist) != len(self.files):
             raise IOError('the length of input name list is not equal to the length of original name list')
         colnames = list(self.feature_table)
@@ -258,6 +312,15 @@ class AutoMSFeature:
     
     
     def append_feature_table(self, feature_object):
+        """
+        Append another feature table to the existing feature table.
+
+        Parameters:
+        - feature_object (AutoMSFeature): The AutoMSFeature object containing the feature table to append.
+
+        Raises:
+        - IOError: If the input is not an AutoMSFeature object.
+        """
         if type(feature_object) != AutoMSFeature:
             raise IOError('input is not a AutoMSFeature object')
         if self.feature_table is None:
@@ -271,6 +334,21 @@ class AutoMSFeature:
     
 
     def preprocessing(self, impute_method = 'KNN', outlier_threshold = 3, rsd_threshold = 0.3, min_frac = 0.5, qc_samples = None, group_info = None, **args):
+        """
+        Preprocess the feature table by imputing missing values, removing outliers, and scaling the data.
+
+        Parameters:
+        - impute_method (str): The imputation method to use.
+        - outlier_threshold (float): The threshold for outlier removal.
+        - rsd_threshold (float): The threshold for relative standard deviation (RSD) filtering.
+        - min_frac (float): The minimum fraction of non-missing values required for a feature to be retained.
+        - qc_samples (list): The list of QC sample names.
+        - group_info (dict): The dictionary containing group information for sample grouping.
+        - args: Additional keyword arguments for the preprocessing method.
+
+        Raises:
+        - ValueError: If the feature table is not matched first.
+        """
         if self.feature_table is None:
             raise ValueError('Please match peak first')
         files = self.files
@@ -286,6 +364,12 @@ class AutoMSFeature:
 
     
     def refine_annotated_table(self):
+        """
+        Refine the feature table with annotation by selecting representative entries for each compound.
+
+        Raises:
+        - ValueError: If there is no annotation information in the feature table.
+        """
         feature_table = self.feature_table
         value_columns = self.files
         print('refine feature table with annotation')
@@ -308,6 +392,19 @@ class AutoMSFeature:
 
     
     def perform_dimensional_reduction(self, group_info = None, method = 'PCA', annotated_only = True, **args):
+        """
+        Perform dimensional reduction on the feature table for visualization.
+
+        Parameters:
+        - group_info (dict): The dictionary containing group information for sample grouping.
+        - method (str): The dimensional reduction method to use (e.g., 'PCA', 'tSNE', 'uMAP').
+        - annotated_only (bool): Whether to use only the annotated feature table for dimensional reduction.
+        - args: Additional keyword arguments for the dimensional reduction method.
+
+        Raises:
+        - ValueError: If the feature table is not matched first.
+        - IOError: If an invalid method is specified.
+        """
         if annotated_only:
             feature_table = self.feature_table_annotated
         else:
@@ -338,6 +435,20 @@ class AutoMSFeature:
         
     
     def perform_PLSDA(self, group_info = None, n_components=2, n_permutations = 1000, annotated_only = True, loo_test = True, permutation_test = True):
+        """
+        Perform Partial Least Squares Discriminant Analysis (PLSDA) on the feature table.
+    
+        Parameters:
+        - group_info (dict): The dictionary specifying group information for sample grouping.
+        - n_components (int): The number of components to use. Default is 2.
+        - n_permutations (int): The number of permutations to perform for permutation test. Default is 1000.
+        - annotated_only (bool): Flag indicating whether to use only the annotated feature table. Default is True.
+        - loo_test (bool): Flag indicating whether to perform leave-one-out test. Default is True.
+        - permutation_test (bool): Flag indicating whether to perform permutation test. Default is True.
+    
+        Raises:
+        - ValueError: If the feature table is not available or if invalid group information is provided.
+        """
         if annotated_only:
             feature_table = self.feature_table_annotated
         else:
@@ -368,6 +479,18 @@ class AutoMSFeature:
     
     
     def perform_RandomForest(self, group_info = None, annotated_only = True, loo_test = True, **args):
+        """
+        Perform Random Forest analysis on the feature table.
+    
+        Parameters:
+        - group_info (dict): The dictionary specifying group information for sample grouping.
+        - annotated_only (bool): Flag indicating whether to use only the annotated feature table. Default is True.
+        - loo_test (bool): Flag indicating whether to perform leave-one-out test. Default is True.
+        - args: Additional arguments to be passed to the Random Forest analysis.
+    
+        Raises:
+        - ValueError: If the feature table is not available or if invalid group information is provided.
+        """
         if annotated_only:
             feature_table = self.feature_table_annotated
         else:
@@ -398,6 +521,20 @@ class AutoMSFeature:
 
 
     def perform_GradientBoost(self, model = 'XGBoost', group_info = None, annotated_only = True, loo_test = True, **args):
+        """
+        Perform Gradient Boosting analysis on the feature table.
+        
+        Parameters:
+        - model (str): The gradient boosting model to use ('XGBoost' or 'LightGBM'). Default is 'XGBoost'.
+        - group_info (dict): The dictionary specifying group information for sample grouping.
+        - annotated_only (bool): Flag indicating whether to use only the annotated feature table. Default is True.
+        - loo_test (bool): Flag indicating whether to perform leave-one-out test. Default is True.
+        - args: Additional arguments to be passed to the Gradient Boosting analysis.
+        
+        Raises:
+        - ValueError: If the feature table is not available or if invalid group information is provided.
+        - IOError: If an invalid model is specified.
+        """
         if annotated_only:
             feature_table = self.feature_table_annotated
         else:
@@ -431,6 +568,17 @@ class AutoMSFeature:
     
     
     def perform_T_Test(self, group_info = None, annotated_only = True, **args):
+        """
+        Perform T-Test analysis on the feature table.
+    
+        Parameters:
+        - group_info (dict): The dictionary specifying group information for sample grouping.
+        - annotated_only (bool): Flag indicating whether to use only the annotated feature table. Default is True.
+        - args: Additional arguments to be passed to the T-Test analysis.
+    
+        Raises:
+        - ValueError: If the feature table is not available or if invalid group information is provided.
+        """
         if annotated_only:
             feature_table = self.feature_table_annotated
         else:
@@ -458,6 +606,17 @@ class AutoMSFeature:
     
     
     def select_biomarker(self, criterion = {'PLS_VIP': ['>', 1.5]}, combination = 'union', annotated_only = True):
+        """
+        Select biomarkers from the feature table based on given criteria.
+    
+        Parameters:
+        - criterion (dict): The dictionary specifying the criteria for biomarker selection.
+        - combination (str): The combination method for multiple criteria ('union' or 'intersection'). Default is 'union'.
+        - annotated_only (bool): Flag indicating whether to use only the annotated feature table. Default is True.
+    
+        Raises:
+        - ValueError: If the feature table is not available or if a criterion is not present in the feature table columns.
+        """
         if annotated_only:
             feature_table = self.feature_table_annotated
         else:
@@ -492,6 +651,18 @@ class AutoMSFeature:
         
     
     def perform_heatmap(self, biomarker_only = True, group_info = None, hide_xticks = False, hide_ytick = False):
+        """
+        Perform heatmap visualization of the feature table or biomarker table.
+    
+        Parameters:
+        - biomarker_only (bool): Flag indicating whether to use only the biomarker table. Default is True.
+        - group_info (dict): The dictionary specifying group information for sample grouping.
+        - hide_xticks (bool): Flag indicating whether to hide the x-axis tick labels. Default is False.
+        - hide_ytick (bool): Flag indicating whether to hide the y-axis tick labels. Default is False.
+    
+        Raises:
+        - IOError: If the number of features is too large for heatmap visualization.
+        """
         # to do: 
             # highlight biomarker
         if biomarker_only:
@@ -523,6 +694,17 @@ class AutoMSFeature:
 
         
     def perform_molecular_network(self, threshold = 0.5, target_compound = None, group_info = None):
+        """
+        Perform molecular network analysis based on the feature table.
+    
+        Parameters:
+        - threshold (float): The threshold value for creating the network. Default is 0.5.
+        - target_compound (str): The target compound to focus on in the network. Default is None.
+        - group_info (dict): The dictionary specifying group information for sample grouping.
+    
+        Raises:
+        - ValueError: If the annotated feature table is not available.
+        """
         feature_table = self.feature_table_annotated
         if feature_table is None:
             raise ValueError('the selected table is None')
@@ -536,6 +718,17 @@ class AutoMSFeature:
     
     
     def perform_enrichment_analysis(self, organism="hsa", pvalue_cutoff = 0.05, adj_method = "fdr_bh"):
+        """
+        Perform enrichment analysis on the biomarker table.
+    
+        Parameters:
+        - organism (str): The organism for enrichment analysis. Default is "hsa" (human).
+        - pvalue_cutoff (float): The p-value cutoff for significant enrichment. Default is 0.05.
+        - adj_method (str): The adjustment method for multiple testing correction. Default is "fdr_bh".
+    
+        Raises:
+        - ValueError: If the biomarker table is not available.
+        """
         biomarker_table = self.biomarker_table
         inchikey_list = biomarker_table['InChIKey']
         enrichment_analysis = enrichment.EnrichmentAnalysis(inchikey_list, organism = organism)
@@ -545,11 +738,23 @@ class AutoMSFeature:
         
     
     def save_project(self, save_path):
+        """
+        Save the current project to a file.
+    
+        Parameters:
+        - save_path (str): The path to save the project file.
+        """
         with open(save_path, 'wb') as f:
             pickle.dump(self.__dict__, f)
     
     
     def load_project(self, save_path):
+        """
+        Load a project from a file.
+    
+        Parameters:
+        - save_path (str): The path to the saved project file.
+        """
         with open(save_path, 'rb') as f:
             obj_dict = pickle.load(f)
         self.__dict__.update(obj_dict)
