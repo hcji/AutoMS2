@@ -14,11 +14,6 @@ This module focuses on identifying and extracting relevant features from raw met
 It employs advanced algorithms to detect peaks or signals representing metabolites within mass 
 spectrometry or chromatography data.
 
-- Feature Grouping:
-The alignment module aims to correct any retention time or mass shifts present in the data. 
-It aligns the features detected across different samples or experimental conditions, ensuring 
-accurate and consistent comparisons.
-
 - Metabolite Annotation:
 The metabolite annotation module plays a crucial role in identifying the detected features. 
 AutoMS compares the experimental data against reference spectral libraries, such as the MassBank or GNPS libraries. 
@@ -47,11 +42,11 @@ underlying mechanisms driving metabolic changes.
 
 ## Documentation
 
-- [Feature Extraction]()
-- [Feature Annotation]()
-- [Statistical Analysis]()
-- [Network Analysis]()
-- [Enhancement Analysis]()
+- [Feature Extraction](https://hcji.github.io/AutoMS2/feature_extraction/)
+- [Feature Annotation](https://hcji.github.io/AutoMS2/feature_annotation/)
+- [Statistical Analysis](https://hcji.github.io/AutoMS2/statistics/)
+- [Network Analysis](https://hcji.github.io/AutoMS2/network_analysis/)
+- [Enhancement Analysis](https://hcji.github.io/AutoMS2/enhancement_analysis/)
 
 
 ## Sources on GitHub
