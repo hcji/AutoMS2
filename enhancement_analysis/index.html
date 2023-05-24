@@ -130,7 +130,7 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-level="1"><a href="#_1" class="nav-link"></a>
+            <li class="nav-item" data-level="1"><a href="#enhancement-analysis" class="nav-link">Enhancement Analysis</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -139,7 +139,26 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h1 id="_1"></h1></div>
+<h1 id="enhancement-analysis">Enhancement Analysis</h1>
+<p>Enrichment analysis is a bioinformatics method used to identify overrepresented biological 
+terms or functional categories within a set of genes, proteins, or metabolites of interest. 
+It helps researchers gain insights into the biological significance of their experimental 
+results by determining whether specific functional annotations or pathways are enriched in 
+the dataset compared to what would be expected by chance.</p>
+<p>Here's an example code snippet:</p>
+<pre><code># after Feature Detection, Metabolite Annotation and Statistical Analysis
+automs_hpic_feat.select_biomarker(criterion = {'PLS_VIP': ['&gt;', 1.2]})
+automs_hpic_feat.perform_enrichment_analysis(self, organism="hsa", pvalue_cutoff = 0.05, adj_method = "fdr_bh")
+</code></pre>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li>perform_enrichment_analysis<ul>
+<li>organism (str): The organism for enrichment analysis. Default is "hsa" (human).</li>
+<li>pvalue_cutoff (float): The p-value cutoff for significant enrichment. Default is 0.05.</li>
+<li>adj_method (str): The adjustment method for multiple testing correction. Default is "fdr_bh".</li>
+</ul>
+</li>
+</ul></div>
             </div>
         </div>
 
