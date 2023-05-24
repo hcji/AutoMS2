@@ -696,15 +696,13 @@ class AutoMSFeature:
         Perform molecular network analysis based on the feature table.
     
         Parameters:
-        - threshold (float): The threshold value for creating the network. Default is 0.5.
+        - threshold (float): The threshold value of similarity for creating the network. Default is 0.5.
         - target_compound (str): The target compound to focus on in the network. Default is None.
         - group_info (dict): The dictionary specifying group information for sample grouping.
     
         Raises:
         - ValueError: If the annotated feature table is not available.
         """
-        # to do: 
-            # highlight biomarker
         feature_table = self.feature_table_annotated
         biomarker_table = self.biomarker_table
         if feature_table is None:
@@ -714,7 +712,7 @@ class AutoMSFeature:
         net.create_network(threshold = threshold)
         net.plot_global_network()
         if target_compound is not None:
-            net.get_subgraph(target_compound = target_compound)
+            net.get_subgraph(compound_name = target_compound)
             net.plot_selected_subgraph()
     
     

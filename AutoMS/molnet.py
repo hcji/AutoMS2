@@ -35,7 +35,7 @@ class MolNet:
         self.names = feature_table_annotated['Annotated Name'].values
         self.group_info = group_info
         self.feature_table_annotated = feature_table_annotated
-        self.biomarker_table = None
+        self.biomarker_table = biomarker_table
         self.matrix = None
         self.G1 = None
         self.G2 = None
@@ -131,6 +131,7 @@ class MolNet:
         
     def plot_selected_subgraph(self):
         G2 = self.G2
+        names = self.names
         if G2 is None:
             raise ValueError('No sub-graph is selected')
         group_info = self.group_info
@@ -163,11 +164,12 @@ class MolNet:
             # get overlapped axes and plot structure
             a = plt.axes([xa - struct_center, ya - struct_center, struct_size, struct_size])
             a.imshow(pilimg)
+            plt.text(xa - struct_center + 0.02, ya - struct_center - 0.02, names[i])
             a.axis("off")
-
+            
             if group_info is not None:
-                group_values = np.array([feature_table_annotated.loc[node[0], group_info[k]] for k in group_info.keys()])
-                group_values = np.median(group_values, axis = 1)
+                group_values = [feature_table_annotated.loc[node[0], group_info[k]] for k in group_info.keys()]
+                group_values = [np.median(v) for v in group_values]
                 group_values = list(group_values / np.mean(group_values))
                 b = plt.axes([xa - struct_center + 0.02, ya - struct_center - 0.02, struct_size / 2.5, struct_size / 2.5])
                 b.imshow([group_values], cmap='bwr')
