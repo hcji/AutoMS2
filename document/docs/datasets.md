@@ -1,0 +1,26 @@
+# Datasets
+
+This is a list of publicly available datasets of MS-based metabolomics study of our laboratory and user contribution. 
+Any researchers can access and re-analyze the datasets under CC-BY-NC v4.0 License. Each item include sample information,
+experimental protocol, raw data and saved AutoMS object. Contact jihongchao@caas.cn for dataset contribution.
+
+## Dataset of 600 mixed standards
+
+- **Sample Information**: comming soon...
+
+- **Experimental Protocol**: comming soon...
+
+- **Download Link**: comming soon...
+
+- **Citation**: comming soon...
+
+
+## Data resource for three species of pogostemon cablin
+
+- **Sample Information**: comming soon...
+
+- **Experimental Protocol**: comming soon...
+
+- **Download Link**: comming soon...
+
+- **Citation**: comming soon...

@@ -14,4 +14,6 @@ nav:
         Network Analysis: network_analysis.md
         Enhancement Analysis: enhancement_analysis.md
     - API guide: API_guide.md
+    - Datasets: datasets.md
+    - MS/MS Library: library.md
     - About: about.md

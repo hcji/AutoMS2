@@ -3,14 +3,9 @@
 AutoMS is an open-source software Python library for LC-MS data management and analyses. It offers an integrated workflow of LC-MS based metabolomics. AutoMS is free software available under the AGPLv3.0 license and runs under Windows, macOS, and Linux.
 
 
-## Features
-
-Under developping.
-
-
 ## Document
 
-The document website is under developping.
+See the [document website](https://hcji.github.io/AutoMS2/).
 
 
 ## Contact

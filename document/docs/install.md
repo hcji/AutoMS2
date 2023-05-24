@@ -2,7 +2,7 @@
 Below the workflow of installation is presented. Install the dependencies first, 
 Then, install AutoMS.
 
-## Install dependencies
+## Install Dependencies
 
 Please follow the steps:
 
