@@ -34,9 +34,10 @@ The AutoMSData class represents an object for handling mass spectrometry data.
 ## AutoMSFeature
 
 **Methods:**
-- **__init__(self, feature_table=None, sample_list=None)**: Initialize AutoMSFeature object.
-- **update_sample_name(self, namelist)**: Update the sample names in the feature table.
-- **append_feature_table(self, feature_object)**: Append another feature table to the existing feature table.
+
+- **__init__(self, feature_table=None, sample_list=None)**: Initialize AutoMSFeature object.  
+- **update_sample_name(self, namelist)**: Update the sample names in the feature table.  
+- **append_feature_table(self, feature_object)**: Append another feature table to the existing feature table.  
 - **preprocessing(self, impute_method='KNN', outlier_threshold=3, rsd_threshold=0.3, min_frac=0.5, qc_samples=None, group_info=None)**: Preprocess the feature table by imputing missing values, removing outliers, and scaling the data.
 - **refine_annotated_table(self)**: Refine the feature table with annotation by selecting representative entries for each compound.
 - **perform_dimensional_reduction(self, group_info=None, method='PCA', annotated_only=True)**: Perform dimensional reduction on the feature table for visualization.
