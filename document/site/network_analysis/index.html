@@ -69,6 +69,23 @@
 <li>
     <a href="../enhancement_analysis/" class="dropdown-item">Enhancement Analysis</a>
 </li>
+                                    
+<li>
+    <a href="../gallery.md" class="dropdown-item">Figure Gallery</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Resource <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../datasets/" class="dropdown-item">Datasets</a>
+</li>
+                                    
+<li>
+    <a href="../library/" class="dropdown-item">MS/MS Library</a>
+</li>
                                 </ul>
                             </li>
                             <li class="navitem">
@@ -113,7 +130,7 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-level="1"><a href="#_1" class="nav-link"></a>
+            <li class="nav-item" data-level="1"><a href="#molecular-network-analysis" class="nav-link">Molecular Network Analysis</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -122,7 +139,39 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h1 id="_1"></h1></div>
+<h1 id="molecular-network-analysis">Molecular Network Analysis</h1>
+<p>Molecular networks are powerful tools used in metabolomics to analyze and visualize 
+the relationships between metabolites based on their structural similarities or 
+chemical associations. These networks provide insights into the connectivity and 
+interactions among metabolites, helping to uncover potential pathways, functional 
+modules, and biological relationships.</p>
+<p>In a molecular network, nodes represent individual metabolites, and edges represent 
+connections between metabolites based on their chemical similarity or shared metabolic 
+transformations. The construction of molecular networks involves analyzing data such 
+as mass spectrometry-based metabolite profiles or chemical databases to identify 
+structural similarities or functional relationships between metabolites.</p>
+<p>AutoMS provides dynamic graph of global network, including all annotated metabolites,
+highlighting the biomarkers if they have been selected by statistical analysis. In this 
+plot, each metabolite is a single point.</p>
+<p>It also provides sub-network if a specific compound need to be focused on. In this plot, 
+metabolites shown as chemical images, accompanied with chemical names and relative concentration 
+relationships among groups.</p>
+<p>Here's an example code snippet:</p>
+<pre><code># after Feature Detection, Metabolite Annotation and Statistical Analysis
+automs_hpic_feat.select_biomarker(criterion = {'PLS_VIP': ['&gt;', 1.2]})
+automs_hpic_feat.perform_molecular_network(threshold = 0.5)
+# or
+automs_hpic_feat.perform_molecular_network(threshold = 0.5, target_compound = 'Stachyose', group_info = group_info)
+</code></pre>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li>perform_molecular_network<ul>
+<li>threshold (float): The threshold value of similarity for creating the network. Default is 0.5.</li>
+<li>target_compound (str): The target compound to focus on in the network. Default is None.</li>
+<li>group_info (dict): The dictionary specifying group information for sample grouping.</li>
+</ul>
+</li>
+</ul></div>
             </div>
         </div>
 

@@ -69,6 +69,23 @@
 <li>
     <a href="../enhancement_analysis/" class="dropdown-item">Enhancement Analysis</a>
 </li>
+                                    
+<li>
+    <a href="../gallery.md" class="dropdown-item">Figure Gallery</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Resource <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../datasets/" class="dropdown-item">Datasets</a>
+</li>
+                                    
+<li>
+    <a href="../library/" class="dropdown-item">MS/MS Library</a>
+</li>
                                 </ul>
                             </li>
                             <li class="navitem active">
@@ -86,7 +103,7 @@
                             </a>
                         </li>
                             <li class="nav-item">
-                                <a rel="prev" href="../enhancement_analysis/" class="nav-link">
+                                <a rel="prev" href="../library/" class="nav-link">
                                     <i class="fa fa-arrow-left"></i> Previous
                                 </a>
                             </li>
@@ -139,15 +156,50 @@
 <li><strong><strong>init</strong>(self, ion_mode='positive')</strong>: Initialize the AutoMSData object with an optional ion_mode parameter specifying the ionization mode.</li>
 <li><strong>load_files(self, data_path)</strong>: Load data files from the specified directory path.</li>
 <li><strong>find_features(self, min_intensity, mass_inv=1, rt_inv=30, min_snr=3, max_items=50000)</strong>: Find features in the loaded data files using the HPIC algorithm. </li>
+<li><strong>evaluate_features(self)</strong>: Evaluate the extracted features using peak evaluation.</li>
+<li><strong>match_features(self, method = 'simple', mz_tol = 0.01, rt_tol = 20, min_frac = 0.5)</strong>: Match and filter extracted features using feature matching.</li>
+<li><strong>load_features_msdial(self, msdial_path)</strong>: Load feature extraction results from MS-DIAL into AutoMS.</li>
+<li><strong>match_features_with_ms2(self, mz_tol = 0.01, rt_tol = 15)</strong>: Match features with corresponding MS/MS spectra.</li>
+<li><strong>search_library(self, lib_path, method = 'entropy', ms1_da = 0.01, ms2_da = 0.05, threshold = 0.5)</strong>: Search a library for metabolite annotation based on the feature table.</li>
+<li><strong>refine_annotated_table(self, value_columns)</strong>: Refine the annotated feature table by selecting representative entries for each annotated compound.</li>
+<li><strong>load_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10)</strong>: Load external annotation information from a file and match it with the feature table.</li>
+<li><strong>export_ms2_to_mgf(self, save_path)</strong>: Export feature MS2 spectra to an MGF file.</li>
+<li><strong>load_deepmass_annotation(self, deepmass_dir)</strong>: Load annotation information from DeepMass results and link it with the feature table.</li>
+<li><strong>save_project(self, save_path)</strong>: Save the current project to a file.</li>
+<li><strong>load_project(self, save_path)</strong>: Load a project from a file.</li>
 </ul>
 <p><strong>Attributes:</strong></p>
 <ul>
-<li><strong>data_path</strong>: </li>
-<li><strong>ion_mode</strong>: </li>
-<li><strong>peaks</strong>: </li>
-<li><strong>feature_table</strong>: </li>
+<li><strong>data_path</strong>: str, The path of the dataset of the experiment.</li>
+<li><strong>ion_mode</strong>: str, The ionization mode of the experiment.</li>
+<li><strong>peaks</strong>: dict, Extracted peaks via HPIC, which will be <em>None</em> if features are load from exterinal software.</li>
+<li><strong>feature_table</strong>: DataFrame, Extracted features with all obtained information from the executed methods.</li>
 </ul>
-<h2 id="automsfeature">AutoMSFeature</h2></div>
+<h2 id="automsfeature">AutoMSFeature</h2>
+<p><strong>Methods:</strong>
+- <strong><strong>init</strong>(self, feature_table=None, sample_list=None)</strong>: Initialize AutoMSFeature object.
+- <strong>update_sample_name(self, namelist)</strong>: Update the sample names in the feature table.
+- <strong>append_feature_table(self, feature_object)</strong>: Append another feature table to the existing feature table.
+- <strong>preprocessing(self, impute_method='KNN', outlier_threshold=3, rsd_threshold=0.3, min_frac=0.5, qc_samples=None, group_info=None)</strong>: Preprocess the feature table by imputing missing values, removing outliers, and scaling the data.
+- <strong>refine_annotated_table(self)</strong>: Refine the feature table with annotation by selecting representative entries for each compound.
+- <strong>perform_dimensional_reduction(self, group_info=None, method='PCA', annotated_only=True)</strong>: Perform dimensional reduction on the feature table for visualization.
+- <strong>perform_PLSDA(self, group_info=None, n_components=2, n_permutations=1000, annotated_only=True, loo_test=True, permutation_test=True)</strong>: Perform Partial Least Squares Discriminant Analysis (PLSDA) on the feature table.
+- <strong>perform_RandomForest(self, group_info=None, annotated_only=True, loo_test=True)</strong>: Perform Random Forest analysis on the feature table.
+- <strong>perform_GradientBoost(self, model='XGBoost', group_info=None, annotated_only=True, loo_test=True)</strong>: Perform Gradient Boosting analysis on the feature table.
+- <strong>perform_T_Test(self, group_info=None, annotated_only=True)</strong>: Perform T-Test analysis on the feature table.
+- <strong>select_biomarker(self, criterion={'PLS_VIP': ['&gt;', 1.5]}, combination='union', annotated_only=True)</strong>: Select biomarkers from the feature table based on given criteria.
+- <strong>perform_heatmap(self, biomarker_only=True, group_info=None, hide_xticks=False, hide_ytick=False)</strong>: Perform heatmap visualization of the feature table or biomarker table.
+- <strong>perform_molecular_network(self, threshold=0.5, target_compound=None, group_info=None)</strong>: Perform molecular network analysis based on the feature table.
+- <strong>perform_enrichment_analysis(self, organism="hsa", pvalue_cutoff=0.05, adj_method="fdr_bh")</strong>: Perform enrichment analysis on the biomarker table.
+- <strong>save_project(self, save_path)</strong>: Save the current project to a file.
+- <strong>load_project(self, save_path)</strong>: Load a project from a file.</p>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li><strong>files</strong>: list, The list of sample names corresponding to the columns in the feature table.</li>
+<li><strong>feature_table</strong>: DataFrame, Extracted features with all obtained information from the executed methods.</li>
+<li><strong>feature_table_annotated</strong>: DataFrame, Extracted features which have been annotated.</li>
+<li><strong>biomarker_table</strong>: DataFrame, Table of selected biomarker.</li>
+</ul></div>
             </div>
         </div>
 

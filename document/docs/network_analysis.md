@@ -18,7 +18,7 @@ plot, each metabolite is a single point.
 
 It also provides sub-network if a specific compound need to be focused on. In this plot, 
 metabolites shown as chemical images, accompanied with chemical names and relative concentration 
-relationships among groups
+relationships among groups.
 
 Here's an example code snippet:
     
