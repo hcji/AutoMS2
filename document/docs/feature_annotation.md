@@ -50,7 +50,10 @@ In this example, the code creates an AutoMSData object with the ion mode set to 
 The data files are then loaded from the specified directory. Features are found in the loaded 
 data using the specified parameters. Feature matching is performed, followed by feature 
 matching with MS2 spectra. Finally, the feature annotation step is carried out using a library 
-stored in the specified pickle file ("Library/references_spectrums_positive.pickle").
+stored in the specified pickle file ("Library/references_spectrums_positive.pickle").  
+  
+Processed public libraries ready for AutoMS can be accessed via [MS/MS Library](https://hcji.github.io/AutoMS2/library/) page. 
+
 
 **Supported similarity method**:
 

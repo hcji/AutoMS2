@@ -128,8 +128,14 @@ pls_vips = automs_hpic_feat.feature_table_annotated['PLS_VIP'].values
 pls_vip_thres = -np.sort(-pls_vips)[30]
 rf_vips = automs_hpic_feat.feature_table_annotated['RF_VIP'].values
 rf_vip_thres = -np.sort(-rf_vips)[30]
-automs_hpic_feat.select_biomarker(criterion = {'PLS_VIP': ['>', pls_vips], 'RF_VIP': ['>', rf_vip_thres]}, combination = 'union')
+automs_hpic_feat.select_biomarker(criterion = {'PLS_VIP': ['>', pls_vip_thres], 'RF_VIP': ['>', rf_vip_thres]}, combination = 'union')
 automs_hpic_feat.perform_heatmap(group_info = group_info, hide_xticks = False, hide_ytick = False)
+
+
+automs_hpic_feat.select_biomarker(criterion = {'PLS_VIP': ['>', 1.2]})
+automs_hpic_feat.perform_molecular_network()
+
+
 
 
 
