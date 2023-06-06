@@ -116,7 +116,7 @@ class AutoMSData:
         self.feature_table['Ionmode'] = self.ion_mode
 
 
-    def load_features_msdial(self, msdial_path):
+    def import_features_from_msdial(self, msdial_path):
         """
         Load feature extraction results from MS-DIAL into AutoMS.
 
@@ -127,6 +127,14 @@ class AutoMSData:
         self.peaks = {f: {} for f in os.listdir(data_path)}
         self.feature_table = msdial.load_msdial_result(data_path, msdial_path)
         self.feature_table['Ionmode'] = self.ion_mode
+        
+    
+    def import_features_from_xcms(self, xcms_path):
+        pass
+    
+    
+    def import_features_from_mzmine(self, mzmine_path):
+        pass
 
     
     def match_features_with_ms2(self, mz_tol = 0.01, rt_tol = 15):
@@ -189,7 +197,7 @@ class AutoMSData:
         return feature_table_annotated
 
         
-    def load_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
+    def import_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
         """
         Load external annotation information from a file and match it with the feature table.
     
@@ -217,7 +225,7 @@ class AutoMSData:
             feature_table.loc[i, 'SMILES'] = annotation_table.loc[k,'SMILES']
             feature_table.loc[i, 'Matching Score'] = 'external annotation'
         self.feature_table = feature_table
-        
+
 
     def export_ms2_to_mgf(self, save_path):
         """
@@ -229,7 +237,23 @@ class AutoMSData:
         deepmass.export_to_mgf(self.feature_table, save_path)
     
     
-    def load_deepmass_annotation(self, deepmass_dir):
+    def export_ms2_to_sirius(self, save_path):
+        pass
+    
+    
+    def export_ms2_to_msfinder(self, save_path):
+        pass
+
+    
+    def import_msfinder_annotation(self):
+        pass
+    
+    
+    def import_sirius_annotation(self):
+        pass
+    
+    
+    def import_deepmass_annotation(self, deepmass_dir):
         """
         Load annotation information from DeepMass results and link it with the feature table.
     
