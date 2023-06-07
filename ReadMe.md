@@ -7,6 +7,7 @@ AutoMS is an open-source software Python library for LC-MS data management and a
 
 See the [document website](https://hcji.github.io/AutoMS2/).
 
+![Alt](https://repobeats.axiom.co/api/embed/0f2bd6690aa93725cc842c9684fa19f28b4c5b0a.svg "Repobeats analytics image")
 
 ## Contact
 
