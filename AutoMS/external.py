@@ -13,6 +13,7 @@ from matchms import Spectrum
 def load_msdial_result(data_path, msdial_path):
     raw = pd.read_csv(msdial_path, sep = '\t', low_memory=False)
     files = os.listdir(data_path)
+    files = [f for f in files if f.endswith('mzML')]
     data_columns = [f.split('.')[0] for f in files]
     
     msdial = raw.iloc[4:,:-2]
@@ -47,4 +48,36 @@ def load_msdial_result(data_path, msdial_path):
     msdial['Tandem_MS'] = msmslist
     msdial = msdial.reset_index(drop = True) 
     return msdial
+
+
+def load_mzmine_result(data_path, mzmine_path):
+    raw = pd.read_csv(mzmine_path, low_memory=False)
+    files = os.listdir(data_path)
+    files = [f for f in files if f.endswith('mzML')]
+    data_columns = ['datafile:{}:height'.format(f) for f in files]
     
+    keep_columns = ['rt', 'mz'] + data_columns
+    output = raw.loc[:, keep_columns]
+    output.columns = ['RT', 'MZ'] + files
+    output['Annotated Name'] = None
+    output['InChIKey'] = None
+    output['SMILES'] = None
+    output['Matching Score'] = None
+    return output
+
+
+def load_xcms_result(data_path, xcms_path):
+    raw = pd.read_csv(xcms_path, low_memory=False)
+    files = os.listdir(data_path)
+    files = [f for f in files if f.endswith('mzML')]
+    data_columns = [f.split('.')[0] for f in files]
+    
+    keep_columns = ['rtmed', 'mzmed'] + data_columns
+    output = raw.loc[:, keep_columns]
+    output.columns = ['RT', 'MZ'] + files
+    output['Annotated Name'] = None
+    output['InChIKey'] = None
+    output['SMILES'] = None
+    output['Matching Score'] = None
+    return output
+

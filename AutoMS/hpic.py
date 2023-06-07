@@ -143,9 +143,11 @@ def PIC(inputfile, min_intensity=200, mass_inv=1, rt_inv=15, mis_gap=3, max_item
         if len(pic_list) >= max_items:
             break
         else:
+            pass
+            '''
             if len(pic_list) % 1000 == 999:
                 print('{} ion traces detected'.format(1 + len(pic_list)))
-        
+            '''
     
     pic_list_refine = {}
     for k, pic in pic_list.items():

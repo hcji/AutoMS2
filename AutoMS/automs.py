@@ -14,7 +14,7 @@ import seaborn as sns
 from tqdm import tqdm
 
 from AutoMS import hpic
-from AutoMS import msdial
+from AutoMS import external
 from AutoMS import library
 from AutoMS import peakeval
 from AutoMS import matching
@@ -37,6 +37,7 @@ class AutoMSData:
         self.ion_mode = ion_mode
         self.peaks = None
         self.feature_table = None
+        self.procedures = []
         
         
     def load_files(self, data_path):
@@ -48,6 +49,8 @@ class AutoMSData:
         """
         self.data_path = data_path
         self.files = os.listdir(self.data_path)
+        self.files = [f for f in self.files if f.endswith('mzML')]
+        self.procedures.append({'load_files': {'data_path' : data_path}})
     
         
     def find_features(self, min_intensity, mass_inv = 1, rt_inv = 30, min_snr = 3, max_items = 50000):
@@ -73,6 +76,10 @@ class AutoMSData:
                                     max_items = max_items)
             output[f] = {'peaks': peaks, 'pics': pics}
         self.peaks = output
+        self.procedures.append({'find_features': {'mass_inv': mass_inv, 
+                                                  'rt_inv': rt_inv,
+                                                  'min_snr': min_snr, 
+                                                  'max_items': max_items}})
         
 
     def evaluate_features(self):
@@ -89,6 +96,7 @@ class AutoMSData:
             pic = vals['pics']
             score = peakeval.evaluate_peaks(peak, pic)
             self.peaks[f]['peaks']['score'] = score
+        self.procedures.append({'evaluate_features': {}})
 
 
     def match_features(self, method = 'simple', mz_tol = 0.01, rt_tol = 20, min_frac = 0.5):
@@ -114,6 +122,10 @@ class AutoMSData:
             raise IOError('Invalid Method')
         self.feature_table = linker.feature_filter(min_frac = min_frac)
         self.feature_table['Ionmode'] = self.ion_mode
+        self.procedures.append({'match_features': {'method': method, 
+                                                   'mz_tol': mz_tol,
+                                                   'rt_tol': rt_tol, 
+                                                   'min_frac': min_frac}})
 
 
     def import_features_from_msdial(self, msdial_path):
@@ -125,16 +137,37 @@ class AutoMSData:
         """
         data_path = self.data_path
         self.peaks = {f: {} for f in os.listdir(data_path)}
-        self.feature_table = msdial.load_msdial_result(data_path, msdial_path)
+        self.feature_table = external.load_msdial_result(data_path, msdial_path)
         self.feature_table['Ionmode'] = self.ion_mode
+        self.procedures.append({'import_features_from_msdial': {'msdial_path': msdial_path}})
         
     
     def import_features_from_xcms(self, xcms_path):
-        pass
+        """
+        Load feature extraction results from XCMS into AutoMS.
+
+        Parameters:
+        - xcms_path (str): The path to the XCMS feature extraction result file.
+        """
+        data_path = self.data_path
+        self.peaks = {f: {} for f in os.listdir(data_path)}
+        self.feature_table = external.load_xcms_result(data_path, xcms_path)
+        self.feature_table['Ionmode'] = self.ion_mode
+        self.procedures.append({'import_features_from_xcms': {'xcms_path': xcms_path}})
     
     
     def import_features_from_mzmine(self, mzmine_path):
-        pass
+        """
+        Load feature extraction results from MZMine3 into AutoMS.
+
+        Parameters:
+        - mzmine_path (str): The path to the MZMine3 feature extraction result file.
+        """
+        data_path = self.data_path
+        self.peaks = {f: {} for f in os.listdir(data_path)}
+        self.feature_table = external.load_mzmine_result(data_path, mzmine_path)
+        self.feature_table['Ionmode'] = self.ion_mode
+        self.procedures.append({'import_features_from_mzmine': {'mzmine_path': mzmine_path}})
 
     
     def match_features_with_ms2(self, mz_tol = 0.01, rt_tol = 15):
@@ -149,6 +182,8 @@ class AutoMSData:
         spectrums = tandem.load_tandem_ms(files)
         spectrums = tandem.cluster_tandem_ms(spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
         self.feature_table = tandem.feature_spectrum_matching(self.feature_table, spectrums, mz_tol = mz_tol, rt_tol = rt_tol)
+        self.procedures.append({'match_features_with_ms2': {'mz_tol': mz_tol, 
+                                                            'rt_tol': rt_tol}})
     
     
     def search_library(self, lib_path, method = 'entropy', ms1_da = 0.01, ms2_da = 0.05, threshold = 0.5):
@@ -167,6 +202,11 @@ class AutoMSData:
         lib = library.SpecLib(lib_path)
         self.feature_table_annotated = lib.search(feature_table = feature_table, method = method, ms1_da = ms1_da, ms2_da = ms2_da, threshold = threshold)
         self.feature_table_annotated = self.refine_annotated_table(value_columns = value_columns)
+        self.procedures.append({'search_library': {'lib_path': lib_path, 
+                                                   'method': method, 
+                                                   'ms1_da': ms1_da, 
+                                                   'ms2_da': ms2_da, 
+                                                   'threshold': threshold}})
 
 
     def refine_annotated_table(self, value_columns):
@@ -225,6 +265,9 @@ class AutoMSData:
             feature_table.loc[i, 'SMILES'] = annotation_table.loc[k,'SMILES']
             feature_table.loc[i, 'Matching Score'] = 'external annotation'
         self.feature_table = feature_table
+        self.procedures.append({'import_external_annotation': {'annotation_file': annotation_file, 
+                                                               'mz_tol': mz_tol, 
+                                                               'rt_tol': rt_tol}})
 
 
     def export_ms2_to_mgf(self, save_path):
@@ -264,6 +307,7 @@ class AutoMSData:
         self.feature_table = deepmass.link_to_deepmass(self.feature_table, deepmass_dir)
         self.feature_table_annotated = self.refine_annotated_table(self.feature_table, value_columns)
         
+        
     def save_project(self, save_path):
         """
         Save the current project to a file.
@@ -295,7 +339,6 @@ class AutoMSData:
         - AutoMSFeature: The AutoMSFeature object representing the feature table.
         """
         return AutoMSFeature(self.feature_table, self.files)
-
 
 
 
