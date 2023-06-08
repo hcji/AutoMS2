@@ -8,7 +8,12 @@ Created on Sun Apr 23 08:27:42 2023
 import os
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+
+import matchms.filtering as msfilters
 from matchms import Spectrum
+from matchms.exporting import save_as_mgf, save_as_msp
+
 
 def load_msdial_result(data_path, msdial_path):
     raw = pd.read_csv(msdial_path, sep = '\t', low_memory=False)
@@ -81,3 +86,89 @@ def load_xcms_result(data_path, xcms_path):
     output['Matching Score'] = None
     return output
 
+def spectrum_processing(s):
+    """This is how one would typically design a desired pre- and post-
+    processing pipeline."""
+    s = msfilters.default_filters(s)
+    if ('adduct_type' in s.metadata.keys()) and ('adduct' not in s.metadata.keys()):
+        s.set('adduct', s.get('adduct_type'))
+    s = msfilters.correct_charge(s)
+    s = msfilters.add_parent_mass(s)
+    s = msfilters.add_losses(s)
+    s = msfilters.normalize_intensities(s)
+    s = msfilters.select_by_mz(s, mz_from=0, mz_to=1000)
+    s = msfilters.reduce_to_number_of_peaks(s, n_max = 50, ratio_desired = 0.05)
+    s = msfilters.remove_peaks_around_precursor_mz(s)
+    return s
+
+
+def export_to_mgf(feature_table, save_path):
+    spectrums = []
+    for i in tqdm(feature_table.index):
+        spectrum = feature_table.loc[i, 'Tandem_MS']
+        if spectrum is None:
+            continue
+        spectrum.set('compound_name', 'compound_{}'.format(i))
+        spectrum.set('title', spectrum.metadata['compound_name'])
+        if 'Adduct' not in feature_table.columns:
+            spectrum.set('adduct', '[M+H]+')
+        else:
+            spectrum.set('adduct', feature_table.loc[i, 'Adduct'])
+        if 'Ionmode' not in feature_table.columns:
+            spectrum.set('ionmode', 'Positive')
+        else:
+            spectrum.set('ionmode', feature_table.loc[i, 'Ionmode'])
+        spectrum = spectrum_processing(spectrum)
+        spectrums.append(spectrum)
+    if os.path.exists(save_path):
+        os.remove(save_path)     
+    save_as_mgf(spectrums, save_path)
+    print('Finished')
+
+
+def export_to_msp(feature_table, save_path):
+    for i in tqdm(feature_table.index):
+        spectrum = feature_table.loc[i, 'Tandem_MS']
+        if spectrum is None:
+            continue
+        spectrum.set('compound_name', 'compound_{}'.format(i))
+        spectrum.set('title', spectrum.metadata['compound_name'])
+        if 'Adduct' not in feature_table.columns:
+            spectrum.set('precursortype', '[M+H]+')
+        else:
+            spectrum.set('precursortype', feature_table.loc[i, 'Adduct'])
+        if 'Ionmode' not in feature_table.columns:
+            spectrum.set('ionmode', 'Positive')
+        else:
+            spectrum.set('ionmode', feature_table.loc[i, 'Ionmode'])
+        spectrum = spectrum_processing(spectrum)
+        save_filename = os.path.join(save_path, '{}.msp'.format(i))
+        if os.path.exists(save_filename):
+            os.remove(save_filename)
+        save_as_msp([spectrum], save_filename)
+        with open(save_filename, encoding = 'utf-8') as msp:
+            lines = msp.readlines()
+            lines = [l.replace('_', '') for l in lines]
+            lines = [l.replace('ADDUCT', 'PRECURSORTYPE') for l in lines]
+        with open(save_filename, 'w') as msp:
+            msp.writelines(lines)
+    print('Finished')
+
+
+def link_to_deepmass(feature_table, deepmass_dir):
+    print('load annotation results from deepmass dir')
+    for i in tqdm(feature_table.index):
+        path = os.path.join(deepmass_dir, 'compound_{}.csv'.format(i))
+        if os.path.exists(path):
+            anno = pd.read_csv(path)
+            if len(anno) > 1:
+                [n, k, s, c] = anno.loc[0, ['Title', 'InChIKey', 'CanonicalSMILES', 'Consensus Score']]      
+                feature_table.loc[i, 'Annotated Name'] = n
+                feature_table.loc[i, 'InChIKey'] = k
+                feature_table.loc[i, 'SMILES'] = s
+                feature_table.loc[i, 'Matching Score'] = c
+            else:
+                continue
+        else:
+            continue
+    return feature_table
