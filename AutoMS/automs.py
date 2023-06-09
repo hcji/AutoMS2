@@ -257,7 +257,7 @@ class AutoMSData:
         external.export_to_msp(self.feature_table, save_path)
 
 
-    def import_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
+    def import_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10, replace_exist = False):
         """
         Load external annotation information from a file and match it with the feature table.
     
@@ -271,6 +271,8 @@ class AutoMSData:
         annotation_table.loc[:,'MZ'] = annotation_table.loc[:,'MZ'].astype(float)
         annotation_table.loc[:,'RT'] = annotation_table.loc[:,'RT'].astype(float)
         for i in feature_table.index:
+            if (feature_table.loc[i, 'InChIKey'] is not None) and (not replace_exist):
+                continue
             k1 = np.abs(float(feature_table.loc[i, 'MZ']) - annotation_table.loc[:,'MZ']) < mz_tol
             k2 = np.abs(float(feature_table.loc[i, 'RT']) - annotation_table.loc[:,'RT']) < rt_tol
             kk = np.where(np.logical_and(k1, k2))[0]
@@ -283,19 +285,38 @@ class AutoMSData:
             feature_table.loc[i, 'Annotated Name'] = annotation_table.loc[k,'Name']
             feature_table.loc[i, 'InChIKey'] = annotation_table.loc[k,'InChIKey']
             feature_table.loc[i, 'SMILES'] = annotation_table.loc[k,'SMILES']
-            feature_table.loc[i, 'Matching Score'] = 'external annotation'
+            feature_table.loc[i, 'Matching Score'] = 'External'
         self.feature_table = feature_table
         self.procedures.append({'import_external_annotation': {'annotation_file': annotation_file, 
                                                                'mz_tol': mz_tol, 
-                                                               'rt_tol': rt_tol}})
+                                                               'rt_tol': rt_tol,
+                                                               'replace_exist': replace_exist}})
         
         
-    def import_msfinder_annotation(self):
-        pass
+    def import_msfinder_annotation(self, msfinder_dir, replace_exist = False):
+        """
+        Load annotation information from DeepMass results and link it with the feature table.
+    
+        Parameters:
+        - msfinder_dir (str): The directory containing MS-Finder results.
+        """
+        value_columns = list(self.peaks.keys())
+        self.feature_table = external.link_to_msfinder(self.feature_table, msfinder_dir, replace_exist = replace_exist)
+        self.feature_table_annotated = self.refine_annotated_table(self.feature_table, value_columns)
+        self.procedures.append({'import_msfinder_annotation': {'msfinder_dir': msfinder_dir, 'replace_exist': replace_exist}})
     
     
-    def import_sirius_annotation(self):
-        pass
+    def import_sirius_annotation(self, sirius_dir, replace_exist = False):
+        """
+        Load annotation information from DeepMass results and link it with the feature table.
+    
+        Parameters:
+        - sirius_dir (str): The directory containing SIRIUS results.
+        """
+        value_columns = list(self.peaks.keys())
+        self.feature_table = external.link_to_sirius(self.feature_table, sirius_dir, replace_exist = replace_exist)
+        self.feature_table_annotated = self.refine_annotated_table(self.feature_table, value_columns)
+        self.procedures.append({'import_sirius_annotation': {'sirius_dir': sirius_dir, 'replace_exist': replace_exist}})
     
     
     def import_deepmass_annotation(self, deepmass_dir, replace_exist = False):
@@ -308,6 +329,7 @@ class AutoMSData:
         value_columns = list(self.peaks.keys())
         self.feature_table = external.link_to_deepmass(self.feature_table, deepmass_dir, replace_exist = replace_exist)
         self.feature_table_annotated = self.refine_annotated_table(self.feature_table, value_columns)
+        self.procedures.append({'import_deepmass_annotation': {'deepmass_dir': deepmass_dir, 'replace_exist': replace_exist}})
         
         
     def save_project(self, save_path):
