@@ -142,13 +142,15 @@ def export_to_msp(feature_table, save_path):
         else:
             spectrum.set('ionmode', feature_table.loc[i, 'Ionmode'])
         spectrum = spectrum_processing(spectrum)
-        save_filename = os.path.join(save_path, '{}.msp'.format(i))
+        save_filename = os.path.join(save_path, 'compound_{}.msp'.format(i))
         if os.path.exists(save_filename):
             os.remove(save_filename)
         save_as_msp([spectrum], save_filename)
         with open(save_filename, encoding = 'utf-8') as msp:
             lines = msp.readlines()
-            lines = [l.replace('_', '') for l in lines]
+            lines = [l.replace('RETENTION_TIME', 'RETENTIONTIME') for l in lines]
+            lines = [l.replace('PRECURSOR_MZ', 'PRECURSORMZ') for l in lines]
+            lines = [l.replace('PRECURSOR_TYPE', 'PRECURSORTYPE') for l in lines]
             lines = [l.replace('ADDUCT', 'PRECURSORTYPE') for l in lines]
         with open(save_filename, 'w') as msp:
             msp.writelines(lines)
@@ -166,9 +168,38 @@ def link_to_deepmass(feature_table, deepmass_dir):
                 feature_table.loc[i, 'Annotated Name'] = n
                 feature_table.loc[i, 'InChIKey'] = k
                 feature_table.loc[i, 'SMILES'] = s
-                feature_table.loc[i, 'Matching Score'] = c
+                feature_table.loc[i, 'Matching Score'] = 'DeepMASS_{}'.format(c)
             else:
                 continue
         else:
             continue
+    return feature_table
+
+
+def link_to_msdial(feature_table, msfinder_dir):
+    print('load annotation results from msfinder dir')
+    for i in tqdm(feature_table.index):
+        path = os.path.join(msfinder_dir, 'compound_{}.csv'.format(i))
+        '''
+        to do...
+        '''
+        pass
+    return feature_table
+
+
+def link_to_sirius(feature_table, sirius_dir):
+    print('load annotation results from sirius dir')
+    sirius_result = pd.read_csv(os.path.join(sirius_dir, 'compound_identifications.tsv'), sep = '\t')
+    for i in tqdm(feature_table.index):
+        w = [sid.endswith('compound_{}'.format(i)) for sid in sirius_result['id'].values]
+        w = np.where(w)[0]
+        if len(w) == 0:
+            continue
+        else:
+            w = w[0]
+            [n, k, s, c] = sirius_result.loc[w, ['name', 'InChIkey2D', 'smiles', 'ConfidenceScore']]      
+            feature_table.loc[i, 'Annotated Name'] = n
+            feature_table.loc[i, 'InChIKey'] = k
+            feature_table.loc[i, 'SMILES'] = s
+            feature_table.loc[i, 'Matching Score'] = 'SIRIUS_{}'.format(c)
     return feature_table
