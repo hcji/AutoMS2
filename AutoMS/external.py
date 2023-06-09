@@ -157,14 +157,16 @@ def export_to_msp(feature_table, save_path):
     print('Finished')
 
 
-def link_to_deepmass(feature_table, deepmass_dir):
+def link_to_deepmass(feature_table, deepmass_dir, replace_exist = False):
     print('load annotation results from deepmass dir')
     for i in tqdm(feature_table.index):
+        if (feature_table.loc[i, 'InChIKey'] is not None) and (not replace_exist):
+            continue
         path = os.path.join(deepmass_dir, 'compound_{}.csv'.format(i))
         if os.path.exists(path):
             anno = pd.read_csv(path)
             if len(anno) > 1:
-                [n, k, s, c] = anno.loc[0, ['Title', 'InChIKey', 'CanonicalSMILES', 'Consensus Score']]      
+                [n, k, s, c] = anno.loc[0, ['Title', 'InChIKey', 'CanonicalSMILES', 'Consensus Score']]
                 feature_table.loc[i, 'Annotated Name'] = n
                 feature_table.loc[i, 'InChIKey'] = k
                 feature_table.loc[i, 'SMILES'] = s
@@ -176,21 +178,40 @@ def link_to_deepmass(feature_table, deepmass_dir):
     return feature_table
 
 
-def link_to_msdial(feature_table, msfinder_dir):
+def link_to_msfinder(feature_table, msfinder_dir, replace_exist = False):
     print('load annotation results from msfinder dir')
+    msfinder_result = os.listdir(msfinder_dir)
+    msfinder_result = [f for f in msfinder_result if f.startswith('Structure result')]
+    if len(msfinder_result) == 0:
+        raise ValueError("There is no annotation results in the selected dir")
+    elif len(msfinder_result) > 1:
+        raise ValueError("There are multiple results in the selected dir")
+    else:
+        msfinder_result = pd.read_csv(os.path.join(msfinder_dir, msfinder_result[0]), sep = '\t')
+    
     for i in tqdm(feature_table.index):
-        path = os.path.join(msfinder_dir, 'compound_{}.csv'.format(i))
-        '''
-        to do...
-        '''
-        pass
+        if (feature_table.loc[i, 'InChIKey'] is not None) and (not replace_exist):
+            continue
+        w = [sid == 'compound_{}'.format(i) for sid in msfinder_result['Title'].values]
+        w = np.where(w)[0]
+        if len(w) == 0:
+            continue
+        else:
+            w = w[0]
+            [n, k, s, c] = msfinder_result.loc[w, ['Structure rank 1', 'InChIKey', 'SMILES', 'Total score']]
+            feature_table.loc[i, 'Annotated Name'] = n
+            feature_table.loc[i, 'InChIKey'] = k
+            feature_table.loc[i, 'SMILES'] = s
+            feature_table.loc[i, 'Matching Score'] = 'MSFinder:{}'.format(c)
     return feature_table
 
 
-def link_to_sirius(feature_table, sirius_dir):
+def link_to_sirius(feature_table, sirius_dir, replace_exist = False):
     print('load annotation results from sirius dir')
     sirius_result = pd.read_csv(os.path.join(sirius_dir, 'compound_identifications.tsv'), sep = '\t')
     for i in tqdm(feature_table.index):
+        if (feature_table.loc[i, 'InChIKey'] is not None) and (not replace_exist):
+            continue
         w = [sid.endswith('compound_{}'.format(i)) for sid in sirius_result['id'].values]
         w = np.where(w)[0]
         if len(w) == 0:
@@ -201,5 +222,5 @@ def link_to_sirius(feature_table, sirius_dir):
             feature_table.loc[i, 'Annotated Name'] = n
             feature_table.loc[i, 'InChIKey'] = k
             feature_table.loc[i, 'SMILES'] = s
-            feature_table.loc[i, 'Matching Score'] = 'SIRIUS_{}'.format(c)
+            feature_table.loc[i, 'Matching Score'] = 'SIRIUS:{}'.format(c)
     return feature_table

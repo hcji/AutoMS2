@@ -235,7 +235,28 @@ class AutoMSData:
         feature_table_annotated = feature_table.loc[keep,:]
         return feature_table_annotated
 
-        
+
+    def export_ms2_to_mgf(self, save_path):
+        """
+        Export feature MS2 spectra to an MGF file.
+    
+        Parameters:
+        - save_path (str): The path to save the MGF file.
+        """
+        external.export_to_mgf(self.feature_table, save_path)
+    
+    
+    def export_ms2_to_msfinder(self, save_path):
+        """
+        Export feature MS2 spectra to an MSP file.
+    
+        Parameters:
+        - save_path (str): The path to save the MSP file.
+        """
+        os.makedirs(save_path, exist_ok=True)
+        external.export_to_msp(self.feature_table, save_path)
+
+
     def import_external_annotation(self, annotation_file, mz_tol = 0.01, rt_tol = 10):
         """
         Load external annotation information from a file and match it with the feature table.
@@ -267,29 +288,8 @@ class AutoMSData:
         self.procedures.append({'import_external_annotation': {'annotation_file': annotation_file, 
                                                                'mz_tol': mz_tol, 
                                                                'rt_tol': rt_tol}})
-
-
-    def export_ms2_to_mgf(self, save_path):
-        """
-        Export feature MS2 spectra to an MGF file.
-    
-        Parameters:
-        - save_path (str): The path to save the MGF file.
-        """
-        external.export_to_mgf(self.feature_table, save_path)
-    
-    
-    def export_ms2_to_msfinder(self, save_path):
-        """
-        Export feature MS2 spectra to an MSP file.
-    
-        Parameters:
-        - save_path (str): The path to save the MSP file.
-        """
-        os.makedirs(save_path, exist_ok=True)
-        external.export_to_msp(self.feature_table, save_path)
-
-    
+        
+        
     def import_msfinder_annotation(self):
         pass
     
@@ -298,7 +298,7 @@ class AutoMSData:
         pass
     
     
-    def import_deepmass_annotation(self, deepmass_dir):
+    def import_deepmass_annotation(self, deepmass_dir, replace_exist = False):
         """
         Load annotation information from DeepMass results and link it with the feature table.
     
@@ -306,7 +306,7 @@ class AutoMSData:
         - deepmass_dir (str): The directory containing DeepMass results.
         """
         value_columns = list(self.peaks.keys())
-        self.feature_table = external.link_to_deepmass(self.feature_table, deepmass_dir)
+        self.feature_table = external.link_to_deepmass(self.feature_table, deepmass_dir, replace_exist = replace_exist)
         self.feature_table_annotated = self.refine_annotated_table(self.feature_table, value_columns)
         
         
