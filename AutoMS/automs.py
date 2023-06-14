@@ -658,7 +658,7 @@ class AutoMSFeature:
             xgb.leave_one_out_test()
     
     
-    def perform_T_Test(self, group_info = None, annotated_only = True, **args):
+    def perform_T_Test(self, group_info = None, annotated_only = True, multi_test_method = None, **args):
         """
         Perform T-Test analysis on the feature table.
     
@@ -686,8 +686,9 @@ class AutoMSFeature:
         
         t_test = analysis.T_Test(x, y)
         t_test.perform_t_test()
-        t_test.calc_fold_change()
-        t_test.perform_multi_test_correlation(**args)
+        t_test.calc_fold_change()  
+        if multi_test_method is not None:
+            t_test.perform_multi_test_correlation(method = multi_test_method, **args)
         t_test.plot_volcano()
         
         if annotated_only:
