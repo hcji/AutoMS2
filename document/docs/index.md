@@ -9,6 +9,8 @@ AutoMS is a comprehensive software tool designed to facilitate metabolomics data
 It offers a range of functionalities that aid in the processing and interpretation of metabolomics 
 data. Here is a detailed summary of each module within AutoMS:
 
+[![1.png](https://i.postimg.cc/Jzty8SL1/1.png)](https://postimg.cc/4Yk4bLyM)
+
 - Feature Detection:
 This module focuses on identifying and extracting relevant features from raw metabolomics data. 
 It employs advanced algorithms to detect peaks or signals representing metabolites within mass 

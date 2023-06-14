@@ -1,4 +1,5 @@
 /.spyproject/
+/document/site/
 *.mzML
 *.pickle
 *.pyc
