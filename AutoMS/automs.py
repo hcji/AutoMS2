@@ -686,15 +686,18 @@ class AutoMSFeature:
         
         t_test = analysis.T_Test(x, y)
         t_test.perform_t_test()
-        t_test.calc_fold_change()  
+        t_test.calc_fold_change()
         if multi_test_method is not None:
-            t_test.perform_multi_test_correlation(method = multi_test_method, **args)
-        t_test.plot_volcano()
+            t_test.perform_multi_test_correlation(method = multi_test_method)
         
         if annotated_only:
             self.feature_table_annotated['T_Test_P_{}'.format('_'.join(group_info.keys()))] = t_test.p_values
+            self.feature_table_annotated['T_Test_LogFC_{}'.format('_'.join(group_info.keys()))] = np.abs(t_test.log2FC)
+            t_test.plot_volcano(feature_name = self.feature_table_annotated['Annotated Name'].values, **args)
         else:
             self.feature_table['T_Test_P_{}'.format('_'.join(group_info.keys()))] = t_test.p_values
+            self.feature_table['T_Test_LogFC_{}'.format('_'.join(group_info.keys()))] = np.abs(t_test.log2FC)
+            t_test.plot_volcano(**args)
     
     
     def select_biomarker(self, criterion = {'PLS_VIP': ['>', 1.5]}, combination = 'union', annotated_only = True):

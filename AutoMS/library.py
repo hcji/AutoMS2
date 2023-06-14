@@ -82,8 +82,10 @@ class SpecLib:
                 feature_table.loc[i, 'Matching Score'] = np.max(scores)
                 if lib[k].get('class') is None:
                     feature_table.loc[i, 'Class'] = self.predict_class(lib[k].get('smiles'))
+                    feature_table.loc[i, 'Super Class'] = self.predict_class(lib[k].get('smiles'))
                 else:
                     feature_table.loc[i, 'Class'] = lib[k].get('class')
+                    feature_table.loc[i, 'Super Class'] = None
         self.feature_table = feature_table
         return self.feature_table
     
@@ -103,11 +105,12 @@ class SpecLib:
         try:
             response = requests.get(url, timeout=timeout)
             soup = BeautifulSoup(response.content, "html.parser") 
-            output = json.loads(str(soup))['class_results']
+            sub_class = json.loads(str(soup))['class_results']
+            super_class = json.loads(str(soup))['superclass_results']
         except:
             return None
-        if len(output) >= 1:
-            return output[0]
+        if len(sub_class) >= 1:
+            return {'class': sub_class[0], 'super_class': super_class[0]}
         else:
             return None
     
