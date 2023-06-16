@@ -33,6 +33,7 @@ class AutoMSData:
         - ion_mode (str): The ionization mode. Default is 'positive'.
         """
         self.data_path = None
+        self.files = None
         self.ion_mode = ion_mode
         self.peaks = None
         self.feature_table = None

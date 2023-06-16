@@ -81,8 +81,11 @@ class SpecLib:
                 feature_table.loc[i, 'SMILES'] = lib[k].get('smiles')
                 feature_table.loc[i, 'Matching Score'] = np.max(scores)
                 if lib[k].get('class') is None:
-                    feature_table.loc[i, 'Class'] = self.predict_class(lib[k].get('smiles'))
-                    feature_table.loc[i, 'Super Class'] = self.predict_class(lib[k].get('smiles'))
+                    classes = self.predict_class(lib[k].get('smiles'))
+                    if classes is None:
+                        continue
+                    feature_table.loc[i, 'Class'] = classes['class']
+                    feature_table.loc[i, 'Super Class'] = classes['super_class']
                 else:
                     feature_table.loc[i, 'Class'] = lib[k].get('class')
                     feature_table.loc[i, 'Super Class'] = None
